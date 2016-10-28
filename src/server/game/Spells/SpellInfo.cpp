@@ -1990,11 +1990,15 @@ uint32 SpellInfo::GetDispelMask() const
 
 uint32 SpellInfo::GetDispelMask(DispelType type)
 {
-    // If dispel all
-    if (type == DISPEL_ALL)
-        return DISPEL_ALL_MASK;
-    else
-        return uint32(1 << type);
+	switch (type)
+	{
+		case DISPEL_ALL:
+			return DISPEL_ALL_MASK;
+		case DISPEL_AMS:
+			return DISPEL_AMS_MASK;
+		default:
+			return uint32(1 << type);
+	}
 }
 
 uint32 SpellInfo::GetExplicitTargetMask() const
