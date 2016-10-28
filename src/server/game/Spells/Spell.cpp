@@ -2264,8 +2264,11 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 		}
 		else if (!m_triggeredByAuraSpell)
 		{
-			targetInfo.timeDelay = GetClientLatency();
-			m_delayMoment = GetClientLatency();
+			// Client latency calculation
+			if (Player* player = m_caster->ToPlayer())
+				targetInfo.timeDelay = uint64(player->GetSession()->GetLatency()) > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : uint64(player->GetSession()->GetLatency());
+
+			m_delayMoment = targetInfo.timeDelay;
 		}
     }
     else
@@ -8148,20 +8151,6 @@ void Spell::CancelGlobalCooldown()
         m_caster->GetCharmInfo()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
     else if (m_caster->GetTypeId() == TYPEID_PLAYER)
         m_caster->ToPlayer()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
-}
-
-uint64 Spell::GetClientLatency()
-{
-	uint64 m_clientLatency = 0LL;
-	uint64 m_clientLatencyNorm = 0LL;
-
-	if (Player* player = m_caster->ToPlayer())
-		m_clientLatency = uint64(player->GetSession()->GetLatency());
-
-	// Client latency normalization
-	m_clientLatencyNorm = m_clientLatency * 2;
-
-	return m_clientLatencyNorm > MAX_CLIENT_LATENCY_NORM ? 0LL : m_clientLatency;
 }
 
 namespace Trinity
