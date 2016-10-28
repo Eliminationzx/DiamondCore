@@ -27,6 +27,7 @@
 #include "CellImpl.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+#include "Pet.h"
 
 enum DeathKnightSpells
 {
@@ -202,6 +203,19 @@ class npc_pet_dk_ebon_gargoyle : public CreatureScript
 						_despawnTimer -= diff;
 					else
 						me->DespawnOrUnsummon();
+				}
+
+				if (Unit* owner = me->GetOwner())
+				{
+					if (Pet* pet = owner->ToPlayer()->GetPet())
+					{
+						Unit* petVictim = pet->GetVictim();
+						if (!petVictim)
+							return;
+
+						if (pet->GetCharmInfo()->IsCommandAttack())
+							AttackStart(petVictim);
+					}
 				}
 			}
 
