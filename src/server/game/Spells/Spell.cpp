@@ -2267,8 +2267,8 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 			// Client latency calculation
 			if (Player* player = m_caster->ToPlayer())
 			{
-				uint64 ClientLatency = uint64(player->GetSession()->GetLatency());
-				targetInfo.timeDelay = ClientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : ClientLatency;
+				uint64 m_clientLatency = uint64(player->GetSession()->GetLatency());
+				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
 			}
 
 			if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
