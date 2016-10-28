@@ -2826,7 +2826,7 @@ void SpellMgr::LoadSpellCustomAttr()
 								spellInfo->Effects[j].ApplyAuraName == SPELL_AURA_PERIODIC_DUMMY)
 								continue;
 						default:
-							if (spellInfo->Effects[j].CalcValue() || ((spellInfo->Effects[j].Effect == SPELL_EFFECT_INTERRUPT_CAST || spellInfo->HasAttribute(SPELL_ATTR0_CUBREAK)) && !spellInfo->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)))
+							if (spellInfo->Effects[j].CalcValue() || (spellInfo->Effects[j].Effect == SPELL_EFFECT_INTERRUPT_CAST && !spellInfo->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)))
 								if (spellInfo->Id != 69649 && spellInfo->Id != 71056 && spellInfo->Id != 71057 && spellInfo->Id != 71058 && spellInfo->Id != 73061 && spellInfo->Id != 73062 && spellInfo->Id != 73063 && spellInfo->Id != 73064) // Sindragosa Frost Breath
 								if (spellInfo->SpellFamilyName != SPELLFAMILY_MAGE || !(spellInfo->SpellFamilyFlags[0] & 0x20)) // frostbolt
 								if (spellInfo->Id != 55095) // frost fever
