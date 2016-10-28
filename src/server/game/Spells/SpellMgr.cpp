@@ -2717,7 +2717,7 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_OBS_MOD_POWER:
                 case SPELL_AURA_POWER_BURN:
                     spellInfo->AttributesCu |= SPELL_ATTR0_CU_NO_INITIAL_THREAT;
-                    break
+					break;
 				case SPELL_AURA_MOD_DECREASE_SPEED:
 					spellInfo->AttributesCu |= SPELL_ATTR0_CU_DONT_BREAK_STEALTH;
 					break;
