@@ -71,7 +71,7 @@ class npc_pet_mage_mirror_image : public CreatureScript
                     return;
 
                 // Clone Me!
-                owner->CastSpell(me, SPELL_MAGE_CLONE_ME, true);
+                owner->CastSpell(me, SPELL_MAGE_CLONE_ME, false);
 
 				// xinef: Glyph of Mirror Image (4th copy)
 				float angle = 0.0f;
