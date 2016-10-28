@@ -8150,7 +8150,7 @@ void Spell::CancelGlobalCooldown()
         m_caster->ToPlayer()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
 }
 
-uint64 Spell::GetClientLatency() const
+uint64 Spell::GetClientLatency()
 {
 	uint64 m_clientLatency = 0LL;
 	uint64 m_clientLatencyNorm = 0LL;
