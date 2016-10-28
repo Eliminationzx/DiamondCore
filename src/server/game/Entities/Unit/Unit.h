@@ -1298,6 +1298,8 @@ enum SpellCooldownFlags
     SPELL_COOLDOWN_FLAG_INCLUDE_EVENT_COOLDOWNS = 0x2   ///< Starts GCD for spells that should start their cooldown on events, requires SPELL_COOLDOWN_FLAG_INCLUDE_GCD set
 };
 
+#define MAX_CLIENT_LATENCY_NORM 400
+
 typedef UNORDERED_MAP<uint32, uint32> PacketCooldowns;
 
 // delay time next attack to prevent client attack animation problems

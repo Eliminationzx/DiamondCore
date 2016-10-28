@@ -2177,17 +2177,25 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
     // Incoming time is zero for self casts. At least I think so.
     if (m_spellInfo->Speed > 0.0f && m_caster != target)
     {
-        // calculate spell incoming interval
-        // TODO: this is a hack
-        float dist = m_caster->GetDistance(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+		if (m_spellInfo->Speed > 0.0f)
+		{
+			// calculate spell incoming interval
+			/// @todo this is a hack
+			float dist = m_caster->GetDistance(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
 
-        if (dist < 5.0f)
-            dist = 5.0f;
-        targetInfo.timeDelay = (uint64) floor(dist / m_spellInfo->Speed * 1000.0f);
+			if (dist < 5.0f)
+				dist = 5.0f;
+			targetInfo.timeDelay = (uint64)floor(dist / m_spellInfo->Speed * 1000.0f);
 
-        // Calculate minimum incoming time
-        if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
-            m_delayMoment = targetInfo.timeDelay;
+			// Calculate minimum incoming time
+			if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
+				m_delayMoment = targetInfo.timeDelay;
+		}
+		else if (!m_triggeredByAuraSpell)
+		{
+			targetInfo.timeDelay = GetClientLatency();
+			m_delayMoment = GetClientLatency();
+		}
     }
     else
         targetInfo.timeDelay = 0LL;
@@ -3514,7 +3522,7 @@ void Spell::_cast(bool skipCheck)
     SendSpellGo();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
-    if ((m_spellInfo->Speed > 0.0f && !m_spellInfo->IsChanneled())/* xinef: we dont need this shit || m_spellInfo->Id == 14157*/)
+	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled() || m_spellInfo->AttributesEx4 & SPELL_ATTR4_UNK4)
     {
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
         // in case delayed spell remove item at cast delay start
@@ -8058,6 +8066,23 @@ void Spell::CancelGlobalCooldown()
         m_caster->ToPlayer()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
 }
 
+uint64 Spell::GetClientLatency() const
+{
+	uint64 m_clientLatency = 0;
+	uint64 m_clientLatencyNorm = 0;
+	Player* player = m_caster->ToPlayer();
+
+	if (player)
+	{
+		m_clientLatency = uint64(player->GetSession()->GetLatency());
+		// Client latency normalization
+		m_clientLatencyNorm = m_clientLatency * 2;
+		if (m_clientLatencyNorm > MAX_CLIENT_LATENCY_NORM)
+			m_clientLatency = 0L;
+	}
+
+	return m_clientLatency;
+}
 
 namespace Trinity
 {
