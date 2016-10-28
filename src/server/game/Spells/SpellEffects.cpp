@@ -863,44 +863,27 @@ void Spell::EffectTriggerSpell(SpellEffIndex effIndex)
                     m_caster->CastSpell(unitTarget, spell->Id, true);
                 return;
             }
-            // Cloak of Shadows
-            case 35729:
-            {
-                uint32 dispelMask = SpellInfo::GetDispelMask(DISPEL_ALL);
-                Unit::AuraApplicationMap& Auras = unitTarget->GetAppliedAuras();
-                for (Unit::AuraApplicationMap::iterator iter = Auras.begin(); iter != Auras.end();)
-                {
-                    // remove all harmful spells on you...
-                    SpellInfo const* spell = iter->second->GetBase()->GetSpellInfo();
-
-					bool dmgClassNone = false;
-					if (spell->DmgClass == SPELL_DAMAGE_CLASS_NONE && spell->SpellFamilyName == SPELLFAMILY_GENERIC)
-						for (uint8 i = EFFECT_0; i < MAX_SPELL_EFFECTS; ++i)
-						{
-							if ((iter->second->GetEffectMask() & (1<<i)) && 
-								spell->Effects[i].ApplyAuraName != SPELL_AURA_PERIODIC_DAMAGE && 
-								spell->Effects[i].ApplyAuraName != SPELL_AURA_PERIODIC_TRIGGER_SPELL &&
-								spell->Effects[i].ApplyAuraName != SPELL_AURA_DUMMY)
-							{
-								dmgClassNone = false;
-								break;
-							}
-							dmgClassNone = true;
-						}
-
-                    if ((spell->DmgClass == SPELL_DAMAGE_CLASS_MAGIC || (spell->GetDispelMask() & dispelMask) || dmgClassNone) &&
-                        // ignore positive and passive auras
-                        !iter->second->IsPositive() && !iter->second->GetBase()->IsPassive() &&
-						// Xinef: Ignore NPC spells having INVULNERABILITY attribute
-						(!spell->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY) || spell->SpellFamilyName != SPELLFAMILY_GENERIC))
-                    {
-                        m_caster->RemoveAura(iter);
-                    }
-                    else
-                        ++iter;
-                }
-                return;
-            }
+			// Cloak of Shadows
+			case 35729:
+			{
+				uint32 dispelMask = SpellInfo::GetDispelMask(DISPEL_ALL);
+				Unit::AuraApplicationMap& Auras = unitTarget->GetAppliedAuras();
+				for (Unit::AuraApplicationMap::iterator iter = Auras.begin(); iter != Auras.end();)
+				{
+					// remove all harmful spells on you...
+					SpellInfo const* spell = iter->second->GetBase()->GetSpellInfo();
+					if (((spell->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && spell->GetSchoolMask() != SPELL_SCHOOL_MASK_NORMAL) // only affect magic spells
+						|| (spell->GetDispelMask() & dispelMask)) &&
+						// ignore positive and passive auras
+						!iter->second->IsPositive() && !iter->second->GetBase()->IsPassive())
+					{
+						m_caster->RemoveAura(iter);
+					}
+					else
+						++iter;
+				}
+				return;
+			}
 			// Spell Lock, handled in interrupt effect
 			// launch is handled before hit triggers, thus silence removes current casted spell
 			// and interrupt is unable to detect any cast and doesnt work
