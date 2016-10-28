@@ -2348,11 +2348,15 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         return;
 
 	// Xinef: absorb delayed projectiles for 500ms
-	if (getState() == SPELL_STATE_DELAYED && !m_spellInfo->IsTargetingArea() && !m_spellInfo->IsPositive() && 
-		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
-		effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
-		)
+    if (getState() == SPELL_STATE_DELAYED && !m_spellInfo->IsTargetingArea() && !m_spellInfo->IsPositive() &&
+        (World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
+        effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
+        )
+    {
+        if (m_spellInfo->CalcCastTime(m_caster, this) < 2000 && m_spellInfo->Speed == 0.0f)
+            effectUnit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
         return;                                             // No missinfo in that case
+    }
 
     // Get original caster (if exist) and calculate damage/healing from him data
     Unit* caster = m_originalCaster ? m_originalCaster : m_caster;
@@ -2610,13 +2614,12 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         }
     }
 
-	if (missInfo != SPELL_MISS_EVADE && !m_caster->IsFriendlyTo(effectUnit) && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT) && (!m_spellInfo->IsPositive() || m_spellInfo->HasEffect(SPELL_EFFECT_DISPEL)))
+	if (missInfo != SPELL_MISS_EVADE && !m_caster->IsFriendlyTo(effectUnit))
     {
-        m_caster->CombatStart(effectUnit, !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO));
+        m_caster->CombatStart(effectUnit, m_spellInfo->HasInitialAggro());
 
-        if (m_spellInfo->HasAttribute(SPELL_ATTR0_CU_AURA_CC))
-            if (!effectUnit->IsStandState())
-                effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
+		if (!effectUnit->IsStandState())
+			effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
     }
 
     if (spellHitTarget)
@@ -2696,49 +2699,52 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         m_caster->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL2, m_spellInfo->Id, 0, unit);
     }
 
-    if (m_caster != unit)
-    {
-        // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
-		// Xinef: Also check evade state
-        if (m_spellInfo->Speed > 0.0f)
+	if (m_caster != unit)
+	{
+		// Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
+		if (m_spellInfo->Speed > 0.0f && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+			return SPELL_MISS_EVADE;
+
+		if (m_caster->IsFriendlyTo(unit))
 		{
-			if (unit->GetTypeId() == TYPEID_UNIT && unit->ToCreature()->IsInEvadeMode())
+			// for delayed spells ignore negative spells (after duel end) for friendly targets
+			/// @todo this cause soul transfer bugged
+			// 63881 - Malady of the Mind jump spell (Yogg-Saron)
+			if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive() && m_spellInfo->Id != 63881)
 				return SPELL_MISS_EVADE;
 
-			if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
-				return SPELL_MISS_EVADE;
+			// assisting case, healing and resurrection
+			if (unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
+			{
+				m_caster->SetContestedPvP();
+				if (m_caster->GetTypeId() == TYPEID_PLAYER)
+					m_caster->ToPlayer()->UpdatePvP(true);
+			}
+			if (unit->IsInCombat() && m_spellInfo->HasInitialAggro())
+			{
+				m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
+				unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
+			}
 		}
+		else
+		{
+			unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
 
-        if (m_caster->_IsValidAttackTarget(unit, m_spellInfo))
-        {
-            unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
-        }
-        else if (m_caster->IsFriendlyTo(unit))
-        {
-            // for delayed spells ignore negative spells (after duel end) for friendly targets
-            // TODO: this cause soul transfer bugged
-			if(!IsTriggered() && m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive())
-                return SPELL_MISS_EVADE;
+			// Interrupt periodic trigger auras
+			Unit::AuraEffectList const& auraPeriodicTrigger = unit->GetAuraEffectsByType(SPELL_AURA_PERIODIC_TRIGGER_SPELL);
+			for (Unit::AuraEffectList::const_iterator itr = auraPeriodicTrigger.begin(); itr != auraPeriodicTrigger.end();)
+			{
+				SpellInfo const* spellInfo = (*itr)->GetSpellInfo();
+				++itr;
 
-            // assisting case, healing and resurrection
-            if (unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
-            {
-                m_caster->SetContestedPvP();
-                if (m_caster->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT))
-                    m_caster->ToPlayer()->UpdatePvP(true);
-            }
+				if ((spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION))
+					unit->RemoveAurasDueToSpell(spellInfo->Id);
+			}
 
-			// xinef: triggered spells should not prolong combat
-			if (unit->IsInCombat() && !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO) && !m_triggeredByAuraSpell)
-            {
-				// xinef: start combat with hostile unit...
-				if (Unit* hostile = unit->getAttackerForHelper())
-					m_caster->CombatStart(hostile, true);
-                //m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
-                unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
-            }
-        }
-    }
+			if (!(m_spellInfo->AttributesCu & SPELL_ATTR0_CU_DONT_BREAK_STEALTH))
+				unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
+		}
+	}
 
     uint8 aura_effmask = 0;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
@@ -4931,7 +4937,7 @@ void Spell::HandleThreatSpells()
     if (m_UniqueTargetInfo.empty())
         return;
 
-    if (m_spellInfo->HasAttribute(SPELL_ATTR1_NO_THREAT) || m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO))
+	if (!m_spellInfo->HasInitialAggro())
         return;
 
     float threat = 0.0f;
