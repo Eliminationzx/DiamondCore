@@ -160,7 +160,7 @@ class npc_pet_mage_mirror_image : public CreatureScript
 					if (selection && selection != me->GetVictim())
 					{
 						// target has cc, search target without cc!
-						if (selection->HasBreakableByDamageCrowdControlAura(me) || !me->IsValidAttackTarget(selection))
+						if (selection->HasBreakableByDamageCrowdControlAura() || !me->IsValidAttackTarget(selection))
 						{
 							return false;
 						}
@@ -191,7 +191,7 @@ class npc_pet_mage_mirror_image : public CreatureScript
 					return;
 				}
 
-				if (me->GetVictim()->HasBreakableByDamageCrowdControlAura(me) || !me->GetVictim()->IsAlive())
+				if (me->GetVictim()->HasBreakableByDamageCrowdControlAura() || !me->GetVictim()->IsAlive())
 				{
 					me->InterruptNonMeleeSpells(false);
 					if (!MySelectNextTarget())
