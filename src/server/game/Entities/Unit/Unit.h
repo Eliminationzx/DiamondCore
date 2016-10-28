@@ -75,8 +75,9 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT    = 0x00800000,   // 23   removed by entering pvp combat
     AURA_INTERRUPT_FLAG_DIRECT_DAMAGE       = 0x01000000,   // 24   removed by any direct damage
     AURA_INTERRUPT_FLAG_LANDING             = 0x02000000,   // 25   removed by hitting the ground
-	AURA_INTERRUPT_FLAG_STEALTH             = 0x00023C04,   // 26   removed by any cc's and etc
-	AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION = 0x000A1404, // 27 removed by any hostile actions
+	AURA_INTERRUPT_FLAG_TAKE_DAMAGE_NOT_TRIGGERED = 0x00480000, // 26 removed by not triggered spell damage (Spells like Dragon's breath and etc)
+	AURA_INTERRUPT_FLAG_STEALTH             = 0x00023C04,   // 27   removed by any cc's and etc
+	AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION = 0x000A1404, // 28 removed by any hostile actions
 
     AURA_INTERRUPT_FLAG_NOT_VICTIM = (AURA_INTERRUPT_FLAG_HITBYSPELL | AURA_INTERRUPT_FLAG_TAKE_DAMAGE | AURA_INTERRUPT_FLAG_DIRECT_DAMAGE),
 };
