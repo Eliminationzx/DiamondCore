@@ -2267,11 +2267,11 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 			// Client latency calculation
 			if (Player* player = m_caster->ToPlayer())
 			{
-				uint64 m_clientLatency = uint64(player->GetSession()->GetLatency());
+				uint64 m_clientLatency = (uint64)player->GetSession()->GetLatency();
 				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
 			}
 
-			// Don't set time delay at every time
+			// Don't set delay moment at every time
 			if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
 				m_delayMoment = targetInfo.timeDelay;
 		}
@@ -3607,6 +3607,9 @@ void Spell::_cast(bool skipCheck)
 
     // we must send smsg_spell_go packet before m_castItem delete in TakeCastItem()...
     SendSpellGo();
+
+	if (m_targets.GetUnitTarget() && !m_caster->IsFriendlyTo(m_targets.GetUnitTarget()))
+		m_caster->CombatStart(m_targets.GetUnitTarget(), m_spellInfo->HasInitialAggro());
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
 	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled() || m_spellInfo->AttributesEx4 & SPELL_ATTR4_UNK4)
