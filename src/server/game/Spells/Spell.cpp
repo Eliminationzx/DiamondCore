@@ -2246,7 +2246,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 
     // Spell have speed - need calculate incoming time
     // Incoming time is zero for self casts. At least I think so.
-    if (m_spellInfo->Speed > 0.0f && m_caster != target)
+	if (m_caster != target)
     {
 		if (m_spellInfo->Speed > 0.0f)
 		{
@@ -2267,8 +2267,8 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 			// Client latency calculation
 			if (Player* player = m_caster->ToPlayer())
 			{
-				//uint64 m_clientLatency = uint64(player->GetSession()->GetLatency());
-				targetInfo.timeDelay = 200LL;/*m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;*/
+				uint64 m_clientLatency = uint64(player->GetSession()->GetLatency());
+				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
 			}
 
 			// Don't set time delay at every time
