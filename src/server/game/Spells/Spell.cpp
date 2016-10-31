@@ -2267,7 +2267,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 			// Client latency calculation
 			if (Player* player = m_caster->ToPlayer())
 			{
-				uint64 m_clientLatency = (uint64)player->GetSession()->GetLatency();
+				uint64 m_clientLatency = uint64(World::GetGameTimeMS() - player->GetSession()->GetLatency());
 				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
 			}
 
@@ -2436,8 +2436,8 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         return;
 
 	// Xinef: absorb delayed projectiles for 500ms
-	if (getState() == SPELL_STATE_DELAYED && !m_spellInfo->IsTargetingArea() && !m_spellInfo->IsPositive() &&
-		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
+	if (getState() == SPELL_STATE_DELAYED && !m_caster->IsFriendlyTo(effectUnit) &&
+		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + m_delayMoment) &&
 		effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
 		)
 	{
