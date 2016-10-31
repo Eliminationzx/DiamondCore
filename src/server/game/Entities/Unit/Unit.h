@@ -1300,6 +1300,7 @@ enum SpellCooldownFlags
 };
 
 #define MAX_CLIENT_LATENCY_NORM 400LL
+#define SANCTUARY_TIME_DELAY 500
 
 typedef UNORDERED_MAP<uint32, uint32> PacketCooldowns;
 

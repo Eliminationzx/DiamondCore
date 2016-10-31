@@ -2437,7 +2437,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
 
 	// Xinef: absorb delayed projectiles for 500ms
 	if (getState() == SPELL_STATE_DELAYED && !m_caster->IsFriendlyTo(effectUnit) &&
-		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
+		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + SANCTUARY_TIME_DELAY) &&
 		effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
 		)
 	{
@@ -2856,10 +2856,6 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
             )) || type == DRTYPE_ALL)
             unit->IncrDiminishing(m_diminishGroup);
     }
-
-	// Xinef: Stealth remove, added UGLY hack for mass dispel... cant find any other solution, ugly hack for Storm, Earth and Fire talent
-	if (m_caster != unit && m_caster->IsHostileTo(unit) && !m_spellInfo->IsPositive() && !m_triggeredByAuraSpell && m_spellInfo->SpellIconID != 2267 && unit->IsControlledByPlayer() && (!m_caster->IsTotem() || m_spellInfo->Id == 64695))
-		unit->RemoveAurasByType(SPELL_AURA_MOD_STEALTH);
 
     if (aura_effmask)
     {
@@ -3663,12 +3659,6 @@ void Spell::_cast(bool skipCheck)
         if (Unit* target = m_targets.GetUnitTarget())
             if (target->GetTypeId() == TYPEID_UNIT)
                 m_caster->CastSpell(target, 32747, true);
-
-	// xinef: start combat at cast for delayed spells, only for explicit target
-	if (Unit* target = m_targets.GetUnitTarget())
-		if (m_caster->GetTypeId() == TYPEID_PLAYER || (m_caster->IsPet() && m_caster->IsControlledByPlayer()))
-			if (GetDelayMoment() > 0 && !m_caster->IsFriendlyTo(target) && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT) && (!m_spellInfo->IsPositive() || m_spellInfo->HasEffect(SPELL_EFFECT_DISPEL)))
-				m_caster->CombatStartOnCast(target, !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO), GetDelayMoment() + 500); // xinef: increase this time so we dont leave and enter combat in a moment
 
     SetExecutedCurrently(false);
 }
