@@ -15445,7 +15445,7 @@ void Unit::RestoreDisplayId()
 	if (!handledAuraForced && !handledAura)
 	{
 		Unit::AuraEffectList const& cloneAuras = GetAuraEffectsByType(SPELL_AURA_CLONE_CASTER);
-		if (!cloneAuras.empty())
+		if (!cloneAuras.empty() && !transforms.empty())
 			for (Unit::AuraEffectList::const_iterator i = cloneAuras.begin(); i != cloneAuras.end(); ++i)
 				handledAura = *i;
 	}
