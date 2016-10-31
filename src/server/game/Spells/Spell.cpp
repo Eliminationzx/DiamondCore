@@ -2739,9 +2739,12 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
     if (!unit || !effectMask)
         return SPELL_MISS_EVADE;
 
-    // For delayed spells immunity may be applied between missile launch and hit - check immunity for that case
-	if (m_spellInfo->Speed && ((m_damage > 0 && unit->IsImmunedToDamage(m_spellInfo)) || unit->IsImmunedToSchool(m_spellInfo) || unit->IsImmunedToSpell(m_spellInfo)))
-        return SPELL_MISS_IMMUNE;
+	// For delayed spells immunity may be applied between missile launch and hit - check immunity for that case
+	SpellMissInfo missinfo = SPELL_MISS_NONE;
+	if (m_spellInfo->Speed)
+		missinfo = m_caster->SpellHitResult(unit, m_spellInfo, true);
+	if (missinfo == SPELL_MISS_IMMUNE)
+		return SPELL_MISS_IMMUNE;
 
     // disable effects to which unit is immune
     SpellMissInfo returnVal = SPELL_MISS_IMMUNE;
