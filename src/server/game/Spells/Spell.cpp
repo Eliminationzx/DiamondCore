@@ -2437,7 +2437,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
 
 	// Xinef: absorb delayed projectiles for 500ms
 	if (getState() == SPELL_STATE_DELAYED && !m_caster->IsFriendlyTo(effectUnit) &&
-		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + m_delayMoment) &&
+		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
 		effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
 		)
 	{

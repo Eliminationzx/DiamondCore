@@ -404,6 +404,18 @@ void Unit::Update(uint32 p_time)
         }
     }
 
+	// update forced visibility
+    if (m_forcedVisibilityTimer > 0)
+    {
+        if (m_forcedVisibilityTimer <= p_time)
+        {
+            m_forcedVisibilityTimer = 0;
+            UpdateObjectVisibility();
+        }
+        else
+            m_forcedVisibilityTimer -= p_time;
+    }
+
     // not implemented before 3.0.2
 	// xinef: if attack time > 0, reduce by diff
 	// if on next update, attack time < 0 assume player didnt attack - set to 0
@@ -12860,6 +12872,9 @@ int32 Unit::ModifyPowerPct(Powers power, float pct, bool apply)
 bool Unit::IsAlwaysVisibleFor(WorldObject const* seer) const
 { 
     if (WorldObject::IsAlwaysVisibleFor(seer))
+        return true;
+
+	if (IsVisibilityForced())
         return true;
 
     // Always seen by owner

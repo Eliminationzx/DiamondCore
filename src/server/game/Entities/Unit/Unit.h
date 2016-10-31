@@ -2437,6 +2437,10 @@ class Unit : public WorldObject
         // Movement info
         Movement::MoveSpline * movespline;
 
+		uint32 GetForceVisibilityTimer() const { return m_forcedVisibilityTimer; }
+		bool IsVisibilityForced() const { return m_forcedVisibilityTimer > 0; }
+		void SetForcedVisibilityTimer(uint32 time) { m_forcedVisibilityTimer = time; }
+
     protected:
         explicit Unit (bool isWorldObject);
 
@@ -2557,7 +2561,9 @@ class Unit : public WorldObject
         bool m_cleanupDone; // lock made to not add stuff after cleanup before delete
         bool m_duringRemoveFromWorld; // lock made to not add stuff after begining removing from world
 
-        uint32 _oldFactionId;           ///< faction before charm
+        uint32 _oldFactionId;           ///< faction before 
+
+		uint32 m_forcedVisibilityTimer;
 };
 
 namespace Trinity
