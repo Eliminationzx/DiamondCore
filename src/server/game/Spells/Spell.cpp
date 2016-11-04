@@ -2262,7 +2262,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 			if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
 				m_delayMoment = targetInfo.timeDelay;
 		}
-		else if (!m_triggeredByAuraSpell)
+		/*else if (!m_triggeredByAuraSpell)
 		{
 			if (Player* player = m_caster->ToPlayer())
 			{
@@ -2274,7 +2274,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 				if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
 					m_delayMoment = targetInfo.timeDelay;
 			}
-		}
+		}*/
 	}
 	else
 		targetInfo.timeDelay = 0LL;
