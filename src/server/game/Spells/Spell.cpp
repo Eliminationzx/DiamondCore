@@ -2247,7 +2247,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
     // Spell have speed - need calculate incoming time
     // Incoming time is zero for self casts. At least I think so.
 	if (m_caster != target)
-    {
+	{
 		if (m_spellInfo->Speed > 0.0f)
 		{
 			// calculate spell incoming interval
@@ -2264,10 +2264,10 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 		}
 		else if (!m_triggeredByAuraSpell)
 		{
-			// Client latency calculation
 			if (Player* player = m_caster->ToPlayer())
 			{
-				uint64 m_clientLatency = uint64(World::GetGameTimeMS() - player->GetSession()->GetLatency());
+				// Client latency calculation
+				uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
 				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
 
 				// Don't set delay moment at every time
@@ -2275,10 +2275,9 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 					m_delayMoment = targetInfo.timeDelay;
 			}
 		}
-    }
-    else
-        targetInfo.timeDelay = 0LL;
-
+	}
+	else
+		targetInfo.timeDelay = 0LL;
 
     // If target reflect spell back to caster
     if (targetInfo.missCondition == SPELL_MISS_REFLECT)
@@ -2704,7 +2703,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
 
 	if (missInfo != SPELL_MISS_EVADE && !m_caster->IsFriendlyTo(effectUnit))
     {
-		m_caster->CombatStart(effectUnit, m_spellInfo->HasInitialAggro());
+		m_caster->CombatStart(effectUnit, !m_spellInfo->HasInitialAggro());
 
         if (!effectUnit->IsStandState())
  			effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
@@ -2811,9 +2810,12 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
 				if (m_caster->GetTypeId() == TYPEID_PLAYER)
 					m_caster->ToPlayer()->UpdatePvP(true);
 			}
-			if (unit->IsInCombat() && m_spellInfo->HasInitialAggro())
+			if (unit->IsInCombat() && !m_spellInfo->HasInitialAggro() && !m_triggeredByAuraSpell)
 			{
-				m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
+				// xinef: start combat with hostile unit...
+				if (Unit* hostile = unit->getAttackerForHelper())
+					m_caster->CombatStart(hostile, true);
+				//m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
 				unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
 			}
 		}
@@ -3611,7 +3613,7 @@ void Spell::_cast(bool skipCheck)
     SendSpellGo();
 
 	if (m_targets.GetUnitTarget() && !m_caster->IsFriendlyTo(m_targets.GetUnitTarget()))
-		m_caster->CombatStart(m_targets.GetUnitTarget(), m_spellInfo->HasInitialAggro());
+		m_caster->CombatStart(m_targets.GetUnitTarget(), !m_spellInfo->HasInitialAggro());
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
 	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled() || m_spellInfo->AttributesEx4 & SPELL_ATTR4_UNK4)
@@ -5031,7 +5033,7 @@ void Spell::HandleThreatSpells()
     if (m_UniqueTargetInfo.empty())
         return;
 
-	if (!m_spellInfo->HasInitialAggro())
+	if (m_spellInfo->HasInitialAggro())
         return;
 
     float threat = 0.0f;
