@@ -1558,7 +1558,7 @@ class spell_dk_death_grip : public SpellScriptLoader
             {
                 Unit* caster = GetCaster();
 				if (Unit* target = GetExplTargetUnit())
-					if (target->GetTypeId() == TYPEID_PLAYER && caster->GetExactDist(target) < 8.0f) // xinef: should be 8.0f, but we have to add target size (1.5f)
+					if (target->GetTypeId() == TYPEID_PLAYER && caster->GetExactDist(target) < 1.5f) // xinef: should be 8.0f, but we have to add target size (1.5f)
 						return SPELL_FAILED_TOO_CLOSE;
 
                 return SPELL_CAST_OK;
@@ -1592,7 +1592,7 @@ class spell_dk_death_grip : public SpellScriptLoader
 						}
 
 						if (target->GetMapId() == 618) // for Ring of Valor
-							gripPos.m_positionZ = std::max(casterZ+0.2f, 28.5f);
+							gripPos.m_positionZ = std::max(casterZ+0.0f, 28.5f);
 
 						target->CastSpell(gripPos.GetPositionX(), gripPos.GetPositionY(), gripPos.GetPositionZ(), 57604, true);
 					}

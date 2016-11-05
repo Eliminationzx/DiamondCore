@@ -2128,6 +2128,13 @@ public:
             target->GetSession()->m_muteTime = muteTime;
             stmt->setInt64(0, muteTime);
             ChatHandler(target->GetSession()).PSendSysMessage(LANG_YOUR_CHAT_DISABLED, notSpeakTime, muteBy.c_str(), muteReasonStr.c_str());
+			
+			// Добавление ауры при получение мута (на время мута)
+			uint32 HasAuraType = 47044;
+			target->CastSpell(target, HasAuraType, true); 
+            if (Aura* MutAura = target->GetAura(HasAuraType))
+            MutAura->SetDuration(60 * IN_MILLISECONDS * notSpeakTime);
+
         }
         else
         {
@@ -2190,6 +2197,10 @@ public:
         stmt->setString(2, "");
         stmt->setUInt32(3, accountId);
         LoginDatabase.Execute(stmt);
+				
+		// если на игроке все еще висит мут и вы хотите снять мут то ауру тоже снимется
+		uint32 MutAuraId = 47044;
+		target->RemoveAura(MutAuraId);
 
         if (target)
             ChatHandler(target->GetSession()).PSendSysMessage(LANG_YOUR_CHAT_ENABLED);

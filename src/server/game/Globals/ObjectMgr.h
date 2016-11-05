@@ -1062,6 +1062,14 @@ class ObjectMgr
         }
         GameObjectData& NewGOData(uint32 guid) { return _gameObjectDataStore[guid]; }
         void DeleteGOData(uint32 guid);
+		
+		ItemLocale const* GetItemLocale(uint32 entry) const
+		{
+			ItemLocaleContainer::const_iterator itr = _itemLocaleStore.find(entry);
+			if (itr == _itemLocaleStore.end()) return NULL;
+			return &itr->second;
+		}
+
 
         TrinityStringLocale const* GetTrinityStringLocale(int32 entry) const
         {
@@ -1164,6 +1172,12 @@ class ObjectMgr
         GraveyardContainer GraveyardStore;
 
         static void AddLocaleString(std::string const& s, LocaleConstant locale, StringVector& data);
+		
+		static inline void GetLocaleString(const StringVector& data, int loc_idx, std::string& value)
+		{
+			if (data.size() > size_t(loc_idx) && !data[loc_idx].empty())
+				value = data[loc_idx];
+		}
 
         CharacterConversionMap FactionChangeAchievements;
         CharacterConversionMap FactionChangeItems;

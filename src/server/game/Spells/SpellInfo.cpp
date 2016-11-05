@@ -1990,15 +1990,11 @@ uint32 SpellInfo::GetDispelMask() const
 
 uint32 SpellInfo::GetDispelMask(DispelType type)
 {
-	switch (type)
-	{
-		case DISPEL_ALL:
-			return DISPEL_ALL_MASK;
-		case DISPEL_AMS:
-			return DISPEL_AMS_MASK;
-		default:
-			return uint32(1 << type);
-	}
+    // If dispel all
+    if (type == DISPEL_ALL)
+        return DISPEL_ALL_MASK;
+    else
+        return uint32(1 << type);
 }
 
 uint32 SpellInfo::GetExplicitTargetMask() const
@@ -2894,9 +2890,4 @@ void SpellInfo::_UnloadImplicitTargetConditionLists()
         }
         delete cur;
     }
-}
-
-bool SpellInfo::HasInitialAggro() const
-{
-	return !(AttributesEx & SPELL_ATTR1_NO_THREAT || AttributesEx3 & SPELL_ATTR3_NO_INITIAL_AGGRO);
 }

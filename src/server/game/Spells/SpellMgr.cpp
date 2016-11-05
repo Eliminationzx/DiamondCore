@@ -2706,6 +2706,14 @@ void SpellMgr::LoadSpellCustomAttr()
         {
             switch (spellInfo->Effects[j].ApplyAuraName)
             {
+                case SPELL_AURA_MOD_POSSESS:
+                case SPELL_AURA_MOD_CONFUSE:
+                case SPELL_AURA_MOD_CHARM:
+                case SPELL_AURA_AOE_CHARM:
+                case SPELL_AURA_MOD_FEAR:
+                case SPELL_AURA_MOD_STUN:
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+                    break;
                 case SPELL_AURA_PERIODIC_HEAL:
                 case SPELL_AURA_PERIODIC_DAMAGE:
                 case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
@@ -2718,20 +2726,10 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_POWER_BURN:
                     spellInfo->AttributesCu |= SPELL_ATTR0_CU_NO_INITIAL_THREAT;
                     break;
-				case SPELL_AURA_MOD_DECREASE_SPEED:
-					spellInfo->AttributesCu |= SPELL_ATTR0_CU_DONT_BREAK_STEALTH;
-					break;
             }
 
             switch (spellInfo->Effects[j].Effect)
             {
-				case SPELL_EFFECT_DISPEL:
-                case SPELL_EFFECT_DISPEL_MECHANIC:
-                case SPELL_EFFECT_THREAT:
-                case SPELL_EFFECT_MODIFY_THREAT_PERCENT:
-                case SPELL_EFFECT_DISTRACT:
-                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_DONT_BREAK_STEALTH;
-                    break;
                 case SPELL_EFFECT_SCHOOL_DAMAGE:
                 case SPELL_EFFECT_WEAPON_DAMAGE:
                 case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
@@ -2826,7 +2824,7 @@ void SpellMgr::LoadSpellCustomAttr()
 								spellInfo->Effects[j].ApplyAuraName == SPELL_AURA_PERIODIC_DUMMY)
 								continue;
 						default:
-							if (spellInfo->Effects[j].CalcValue() || (spellInfo->Effects[j].Effect == SPELL_EFFECT_INTERRUPT_CAST && !spellInfo->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)))
+							if (spellInfo->Effects[j].CalcValue() || ((spellInfo->Effects[j].Effect == SPELL_EFFECT_INTERRUPT_CAST || spellInfo->HasAttribute(SPELL_ATTR0_CU_AURA_CC)) && !spellInfo->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)))
 								if (spellInfo->Id != 69649 && spellInfo->Id != 71056 && spellInfo->Id != 71057 && spellInfo->Id != 71058 && spellInfo->Id != 73061 && spellInfo->Id != 73062 && spellInfo->Id != 73063 && spellInfo->Id != 73064) // Sindragosa Frost Breath
 								if (spellInfo->SpellFamilyName != SPELLFAMILY_MAGE || !(spellInfo->SpellFamilyFlags[0] & 0x20)) // frostbolt
 								if (spellInfo->Id != 55095) // frost fever
@@ -3136,6 +3134,27 @@ void SpellMgr::LoadSpellCustomAttr()
 				spellInfo->_requireCooldownInfo = true;
 				break;
         }
+
+        switch (spellInfo->SpellFamilyName)
+        {
+            case SPELLFAMILY_WARRIOR:
+                // Shout / Piercing Howl
+                if (spellInfo->SpellFamilyFlags[0] & 0x20000 || spellInfo->SpellFamilyFlags[1] & 0x20)
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+                break;
+            case SPELLFAMILY_DRUID:
+                // Roar
+                if (spellInfo->SpellFamilyFlags[0] & 0x8)
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+                break;
+			case SPELLFAMILY_GENERIC:
+				// Stoneclaw Totem effect
+				if(spellInfo->Id == 5729)
+					spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+				break;
+            default:
+                break;
+        }
     }
 
 	// Xinef: addition for binary spells, ommit spells triggering other spells
@@ -3219,6 +3238,9 @@ void SpellMgr::LoadDbcDataCorrections()
 
         switch (spellInfo->Id)
         {
+            case 38776: // Evergrove Druid Transform Crow
+                 spellInfo->DurationIndex = 4; // 120 seconds
+                 break;
             case 63026: // Force Cast (HACK: Target shouldn't be changed)
 			case 63137: // Force Cast (HACK: Target shouldn't be changed; summon position should be untied from spell destination)
             	spellInfo->EffectImplicitTargetA[EFFECT_0] = TARGET_DEST_DB;
@@ -3623,6 +3645,11 @@ void SpellMgr::LoadDbcDataCorrections()
 			spellInfo->Effect[1] = SPELL_EFFECT_APPLY_AURA;
 			spellInfo->EffectApplyAuraName[1] = SPELL_AURA_DUMMY;
 			break;
+		// Intervene
+        case 3411:
+            spellInfo->Attributes |= SPELL_ATTR0_STOP_ATTACK_TARGET;
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
+            break;
 		// Roar of Sacrifice
 		case 53480:
 			spellInfo->Effect[1] = SPELL_EFFECT_APPLY_AURA;
@@ -3718,6 +3745,13 @@ void SpellMgr::LoadDbcDataCorrections()
         case 51701:
             spellInfo->EffectTriggerSpell[0] = 51699;
             break;
+		// Slice and Dice
+		case 5171:
+		case 6774:
+		// Distract
+		case 1725:
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
+			break;
 		// Envenom
 		case 32645:
 		case 32684:
@@ -3772,6 +3806,7 @@ void SpellMgr::LoadDbcDataCorrections()
 		// Wandering Plague
 		case 50526:
 			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_DONE_BONUS;
+			spellInfo->AttributesEx3 |=  SPELL_ATTR3_NO_INITIAL_AGGRO;
 			break;
 		// Dancing Rune Weapon
 		case 49028:
@@ -4001,6 +4036,13 @@ void SpellMgr::LoadDbcDataCorrections()
         case 29444:
             spellInfo->spellLevel = 0;
             break;
+		// Living Bomb
+		case 44461:
+		case 55361:
+		case 55362:
+			spellInfo->AttributesEx3 |=  SPELL_ATTR3_NO_INITIAL_AGGRO;
+			spellInfo->AttributesEx4 |= SPELL_ATTR4_DAMAGE_DOESNT_BREAK_AURAS;
+			break;
 		// Evocation
 		case 12051:
 			spellInfo->InterruptFlags |= SPELL_INTERRUPT_FLAG_INTERRUPT;
@@ -4178,6 +4220,13 @@ void SpellMgr::LoadDbcDataCorrections()
 		case 770:
 		case 16857:
 			spellInfo->AttributesEx &= ~SPELL_ATTR1_UNAFFECTED_BY_SCHOOL_IMMUNE;
+			break;
+		// Feral Charge - Cat
+		case 49376:
+		case 61138:
+		case 61132:
+		case 50259:
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
 			break;
 		// Glyph of Barkskin
 		case 63058:
@@ -4885,6 +4934,7 @@ void SpellMgr::LoadDbcDataCorrections()
 			break;
 		// Oculus, Drake spell Stop Time
 		case 49838:
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
 			spellInfo->excludeTargetAuraSpell = 51162; // exclude planar shift
 			spellInfo->EffectRadiusIndex[EFFECT_0] = EFFECT_RADIUS_150_YARDS;
 			break;
@@ -4957,6 +5007,12 @@ void SpellMgr::LoadDbcDataCorrections()
 		//////////////////////////////////////////
 		////////// TRIAL OF THE CRUSADER
 		//////////////////////////////////////////
+		// Trial of the Crusader, Jaraxxus Intro spell
+		case 67888:
+			spellInfo->Attributes |= SPELL_ATTR0_STOP_ATTACK_TARGET;
+			spellInfo->AttributesEx |= SPELL_ATTR1_NO_THREAT;
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
+			break;
 		// Trial of the Crusader, Lich King Intro spell
 		case 68193:
 			spellInfo->EffectImplicitTargetB[0] = TARGET_UNIT_SRC_AREA_ENEMY;
@@ -4980,10 +5036,18 @@ void SpellMgr::LoadDbcDataCorrections()
 			spellInfo->EffectImplicitTargetB[1] = TARGET_DEST_TARGET_ANY;
 			spellInfo->Effect[1] = 0;
 			// no break intended
+		case 66317:
+			spellInfo->Attributes |= SPELL_ATTR0_STOP_ATTACK_TARGET;
+			spellInfo->AttributesEx |= SPELL_ATTR1_NO_THREAT;
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
+			break;
 		case 66318:
 			spellInfo->EffectImplicitTargetA[0] = TARGET_UNIT_TARGET_ANY;
 			spellInfo->EffectImplicitTargetB[0] = 0;
 			spellInfo->speed = 14.0f;
+			spellInfo->Attributes |= SPELL_ATTR0_STOP_ATTACK_TARGET;
+			spellInfo->AttributesEx |= SPELL_ATTR1_NO_THREAT;
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
 			break;
 		case 66320:
 		case 67472:
@@ -5783,6 +5847,11 @@ void SpellMgr::LoadDbcDataCorrections()
 		case 47394:
 			spellInfo->excludeTargetAuraSpell = 47394;
 			break;
+		// A Tangled Skein (12555)
+		case 51165:
+		case 51173:
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
+			break;
 		// A Cloudlet of Classy Cologne (24635)
 		case 69563:
 		// A Perfect Puff of Perfume (24629)
@@ -5922,6 +5991,14 @@ void SpellMgr::LoadDbcDataCorrections()
 		// Not a Bug (13342)
 		case 60531:
 			spellInfo->AttributesEx2 |= SPELL_ATTR2_CAN_TARGET_DEAD;
+			break;
+		// Frankly,  It Makes No Sense... (10672)
+		case 37851:
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
+			break;
+		// Honor Challenge (12939)
+		case 21855:
+			spellInfo->AttributesEx3 |= SPELL_ATTR3_NO_INITIAL_AGGRO;
 			break;
 
 

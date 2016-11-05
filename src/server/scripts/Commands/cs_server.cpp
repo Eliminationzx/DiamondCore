@@ -30,6 +30,12 @@ EndScriptData */
 #include "ScriptMgr.h"
 #include "SystemConfig.h"
 #include "AvgDiffTracker.h"
+#include "Player.h"
+#include "Chat.h"
+#include "World.h"
+#include "boost/date_time.hpp"
+#include "Config.h"
+
 
 class server_commandscript : public CommandScript
 {
@@ -116,22 +122,38 @@ public:
         std::string uptime = secsToTimeString(sWorld->GetUptime()).append(".");
         uint32 updateTime = sWorld->GetUpdateTime();
         uint32 avgUpdateTime = avgDiffTracker.getAverage();
-
-		handler->PSendSysMessage("%s Realm, revision: %s.", realmName.c_str(), _REVISION);
-		handler->PSendSysMessage("This server runs on SunwellCore.");
+		
+		//Информация о сервере
+		handler->PSendSysMessage("|cffFF0000 Diamond-WoWCore rev. 1.3 Unix 64bit Release.");
 		if (!queuedSessionCount)
-			handler->PSendSysMessage("Connected players: %u. Characters in world: %u.", activeSessionCount, playerCount);
+			handler->PSendSysMessage("|cff0026FF Подключенные игроки: %u. Персонажей в мире: %u.", activeSessionCount, playerCount);
 		else
-			handler->PSendSysMessage("Connected players: %u. Characters in world: %u. Queue: %u.", activeSessionCount, playerCount, queuedSessionCount);
-		//handler->PSendSysMessage("Connection peak: %u.", connPeak);
-        handler->PSendSysMessage(LANG_UPTIME, uptime.c_str());
-	    handler->PSendSysMessage("Update time diff: %ums, average: %ums.", updateTime, avgUpdateTime);
+			handler->PSendSysMessage("|cff0026FF Подключенные игроки: %u. Персонажей в мире: %u. Очередь: %u.", activeSessionCount, playerCount, queuedSessionCount);
+			handler->PSendSysMessage("|cff0026FF Максимум соединений за сессию: %u.", connPeak);
+			handler->PSendSysMessage("|cff0026FF Время обновления diff: %ums, средний: %ums.", updateTime, avgUpdateTime);
+			handler->PSendSysMessage(LANG_UPTIME, uptime.c_str());
+			handler->PSendSysMessage("|cff0026FF Ядро обновлено: 28.10.2016");
 
 		if (handler->GetSession())
 			if (Player* p = handler->GetSession()->GetPlayer())
 				if (p->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DEVELOPER))
-					handler->PSendSysMessage("DEV wavg: %ums, nsmax: %ums, nsavg: %ums. LFG avg: %ums, max: %ums.", avgDiffTracker.getTimeWeightedAverage(), devDiffTracker.getMax(), devDiffTracker.getAverage(), lfgDiffTracker.getAverage(), lfgDiffTracker.getMax());
-
+					handler->PSendSysMessage("|cff0026FF DEV wavg: %ums, nsmax: %ums, nsavg: %ums. LFG avg: %ums, max: %ums.", avgDiffTracker.getTimeWeightedAverage(), devDiffTracker.getMax(), devDiffTracker.getAverage(), lfgDiffTracker.getAverage(), lfgDiffTracker.getMax());
+		
+		//Информация о акциах
+		handler->PSendSysMessage(" ");
+		handler->PSendSysMessage("|cff3DAEFF  *********** Доступные акции на сервере ***********");
+		boost::gregorian::date date(boost::gregorian::day_clock::local_day());
+		
+		double day = date.day_of_week();
+		
+		 if (day == boost::date_time::Saturday ||
+        day == boost::date_time::Sunday) {
+			
+        handler->PSendSysMessage("  |cff4CFF00 Акция, выходные дни удвоен XP.");
+        }
+		handler->PSendSysMessage("  |cff4CFF00 Акция до 31.11, Увеличены бонусы за время в игре на x2");
+		handler->PSendSysMessage("|cff3DAEFF  **********************************************************");
+		
         //! Can't use sWorld->ShutdownMsg here in case of console command
         if (sWorld->IsShuttingDown())
             handler->PSendSysMessage(LANG_SHUTDOWN_TIMELEFT, secsToTimeString(sWorld->GetShutDownTimeLeft()).append(".").c_str());
