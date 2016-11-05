@@ -2246,35 +2246,29 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 
     // Spell have speed - need calculate incoming time
     // Incoming time is zero for self casts. At least I think so.
-	if (m_caster != target)
+	if (m_spellInfo->Speed > 0.0f && m_caster != target)
 	{
-		if (m_spellInfo->Speed > 0.0f)
-		{
-			// calculate spell incoming interval
-			/// @todo this is a hack
-			float dist = m_caster->GetDistance(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+		// calculate spell incoming interval
+		/// @todo this is a hack
+		float dist = m_caster->GetDistance(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
 
-			if (dist < 5.0f)
-				dist = 5.0f;
-			targetInfo.timeDelay = (uint64)floor(dist / m_spellInfo->Speed * 1000.0f);
+		if (dist < 5.0f)
+			dist = 5.0f;
+		targetInfo.timeDelay = (uint64)floor(dist / m_spellInfo->Speed * 1000.0f);
 
-			// Calculate minimum incoming time
-			if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
-				m_delayMoment = targetInfo.timeDelay;
-		}
-		else if (!m_triggeredByAuraSpell)
-		{
-			if (Player* player = m_caster->ToPlayer())
-			{
-				// Client latency calculation
-				uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
-				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
+		// Calculate minimum incoming time
+		if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
+			m_delayMoment = targetInfo.timeDelay;
+	}
+	else if (!m_triggeredByAuraSpell && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster != target)
+	{
+		// Client latency calculation
+		uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
+		targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
 
-				// Don't set delay moment at every time
-				if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
-					m_delayMoment = targetInfo.timeDelay;
-			}
-		}
+		// Don't set delay moment at every time
+		if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
+			m_delayMoment = targetInfo.timeDelay;
 	}
 	else
 		targetInfo.timeDelay = 0LL;
