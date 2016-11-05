@@ -2246,26 +2246,38 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 
     // Spell have speed - need calculate incoming time
     // Incoming time is zero for self casts. At least I think so.
-    if (m_spellInfo->Speed > 0.0f && m_caster != target)
-    {
-        // calculate spell incoming interval
-        // TODO: this is a hack
-        float dist = m_caster->GetDistance(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+	if (m_caster != target)
+	{
+		if (m_spellInfo->Speed > 0.0f)
+		{
+			// calculate spell incoming interval
+			/// @todo this is a hack
+			float dist = m_caster->GetDistance(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
 
-        if (dist < 5.0f)
-            dist = 5.0f;
-        targetInfo.timeDelay = (uint64) floor(dist / m_spellInfo->Speed * 1000.0f);
+			if (dist < 5.0f)
+				dist = 5.0f;
+			targetInfo.timeDelay = (uint64)floor(dist / m_spellInfo->Speed * 1000.0f);
 
-        // Calculate minimum incoming time
-        if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
-            m_delayMoment = targetInfo.timeDelay;
-    }
-    else
-    {
-        targetInfo.timeDelay = GetCCDelay(m_spellInfo);
-        if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
-            m_delayMoment = targetInfo.timeDelay;
-    };
+			// Calculate minimum incoming time
+			if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
+				m_delayMoment = targetInfo.timeDelay;
+		}
+		else if (!m_triggeredByAuraSpell)
+		{
+			if (Player* player = m_caster->ToPlayer())
+			{
+				// Client latency calculation
+				uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
+				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
+
+				// Don't set delay moment at every time
+				if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
+					m_delayMoment = targetInfo.timeDelay;
+			}
+		}
+	}
+	else
+		targetInfo.timeDelay = 0LL;
 
     // If target reflect spell back to caster
     if (targetInfo.missCondition == SPELL_MISS_REFLECT)
@@ -2423,15 +2435,15 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         return;
 
 	// Xinef: absorb delayed projectiles for 500ms
-    if (getState() == SPELL_STATE_DELAYED && !m_spellInfo->IsTargetingArea() && !m_spellInfo->IsPositive() &&
-        (World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
-        effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
-        )
-    {
-        if (m_spellInfo->CalcCastTime(m_caster,this) < 2000 && m_spellInfo->Speed == 0.0f)
-            effectUnit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
-        return;                                             // No missinfo in that case
-    }
+	if (getState() == SPELL_STATE_DELAYED && !m_caster->IsFriendlyTo(effectUnit) &&
+		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + SANCTUARY_TIME_DELAY) &&
+		effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
+		)
+	{
+		if (m_spellInfo->CalcCastTime(m_caster, this) < 2000 && m_spellInfo->Speed == 0.0f)
+			effectUnit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
+		return;                                             // No missinfo in that case
+	}
 
     // Get original caster (if exist) and calculate damage/healing from him data
     Unit* caster = m_originalCaster ? m_originalCaster : m_caster;
@@ -2691,11 +2703,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
 
 	if (missInfo != SPELL_MISS_EVADE && !m_caster->IsFriendlyTo(effectUnit) && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT) && (!m_spellInfo->IsPositive() || m_spellInfo->HasEffect(SPELL_EFFECT_DISPEL)))
     {
-        m_caster->CombatStart(effectUnit, !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO));
+		m_caster->CombatStart(effectUnit, !m_spellInfo->HasInitialAggro());
 
-        if (m_spellInfo->HasAttribute(SPELL_ATTR0_CU_AURA_CC))
-            if (!effectUnit->IsStandState())
-                effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
+        if (!effectUnit->IsStandState())
+ 			effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
     }
 
     if (spellHitTarget)
@@ -2727,9 +2738,12 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
     if (!unit || !effectMask)
         return SPELL_MISS_EVADE;
 
-    // For delayed spells immunity may be applied between missile launch and hit - check immunity for that case
-	if (m_spellInfo->Speed && ((m_damage > 0 && unit->IsImmunedToDamage(m_spellInfo)) || unit->IsImmunedToSchool(m_spellInfo) || unit->IsImmunedToSpell(m_spellInfo)))
-        return SPELL_MISS_IMMUNE;
+	// For delayed spells immunity may be applied between missile launch and hit - check immunity for that case
+	SpellMissInfo missinfo = SPELL_MISS_NONE;
+	if (m_spellInfo->Speed)
+		missinfo = m_caster->SpellHitResult(unit, m_spellInfo, true);
+	if (missinfo == SPELL_MISS_IMMUNE)
+		return SPELL_MISS_IMMUNE;
 
     // disable effects to which unit is immune
     SpellMissInfo returnVal = SPELL_MISS_IMMUNE;
@@ -2775,49 +2789,62 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         m_caster->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL2, m_spellInfo->Id, 0, unit);
     }
 
-    if (m_caster != unit)
-    {
-        // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
-		// Xinef: Also check evade state
-        if (m_spellInfo->Speed > 0.0f)
+   if (m_caster != unit)
+	{
+	   // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
+	   // Xinef: Also check evade state
+	   if (m_spellInfo->Speed > 0.0f)
+	   {
+		   if (unit->GetTypeId() == TYPEID_UNIT && unit->ToCreature()->IsInEvadeMode())
+			   return SPELL_MISS_EVADE;
+
+		   if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+			   return SPELL_MISS_EVADE;
+	   }
+
+		if (m_caster->IsFriendlyTo(unit))
 		{
-			if (unit->GetTypeId() == TYPEID_UNIT && unit->ToCreature()->IsInEvadeMode())
+			// for delayed spells ignore negative spells (after duel end) for friendly targets
+			/// @todo this cause soul transfer bugged
+			// 63881 - Malady of the Mind jump spell (Yogg-Saron)
+			if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive() && m_spellInfo->Id != 63881)
 				return SPELL_MISS_EVADE;
 
-			if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
-				return SPELL_MISS_EVADE;
-		}
-
-        if (m_caster->_IsValidAttackTarget(unit, m_spellInfo))
-        {
-            unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
-        }
-        else if (m_caster->IsFriendlyTo(unit))
-        {
-            // for delayed spells ignore negative spells (after duel end) for friendly targets
-            // TODO: this cause soul transfer bugged
-			if(!IsTriggered() && m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive())
-                return SPELL_MISS_EVADE;
-
-            // assisting case, healing and resurrection
-            if (unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
-            {
-                m_caster->SetContestedPvP();
-                if (m_caster->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT))
-                    m_caster->ToPlayer()->UpdatePvP(true);
-            }
-
-			// xinef: triggered spells should not prolong combat
-			if (unit->IsInCombat() && !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO) && !m_triggeredByAuraSpell)
-            {
+			// assisting case, healing and resurrection
+			if (unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
+			{
+				m_caster->SetContestedPvP();
+				if (m_caster->GetTypeId() == TYPEID_PLAYER)
+					m_caster->ToPlayer()->UpdatePvP(true);
+			}
+			if (unit->IsInCombat() && !m_spellInfo->HasInitialAggro() && !m_triggeredByAuraSpell)
+			{
 				// xinef: start combat with hostile unit...
 				if (Unit* hostile = unit->getAttackerForHelper())
 					m_caster->CombatStart(hostile, true);
-                //m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
-                unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
-            }
-        }
-    }
+				//m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
+				unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
+			}
+		}
+		else
+		{
+			unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
+
+			// Interrupt periodic trigger auras
+			Unit::AuraEffectList const& auraPeriodicTrigger = unit->GetAuraEffectsByType(SPELL_AURA_PERIODIC_TRIGGER_SPELL);
+			for (Unit::AuraEffectList::const_iterator itr = auraPeriodicTrigger.begin(); itr != auraPeriodicTrigger.end();)
+			{
+				SpellInfo const* spellInfo = (*itr)->GetSpellInfo();
+				++itr;
+
+				if ((spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION))
+					unit->RemoveAurasDueToSpell(spellInfo->Id);
+			}
+
+			if (!(m_spellInfo->AttributesCu & SPELL_ATTR0_CU_DONT_BREAK_STEALTH))
+				unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
+		}
+	}
 
     uint8 aura_effmask = 0;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
@@ -2841,10 +2868,6 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
             )) || type == DRTYPE_ALL)
             unit->IncrDiminishing(m_diminishGroup);
     }
-
-	// Xinef: Stealth remove, added UGLY hack for mass dispel... cant find any other solution, ugly hack for Storm, Earth and Fire talent
-	if (m_caster != unit && m_caster->IsHostileTo(unit) && !m_spellInfo->IsPositive() && !m_triggeredByAuraSpell && m_spellInfo->SpellIconID != 2267 && unit->IsControlledByPlayer() && (!m_caster->IsTotem() || m_spellInfo->Id == 64695))
-		unit->RemoveAurasByType(SPELL_AURA_MOD_STEALTH);
 
     if (aura_effmask)
     {
@@ -2870,8 +2893,11 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         if (m_originalCaster)
         {
             bool refresh = false;
-            m_spellAura = Aura::TryRefreshStackOrCreate(aurSpellInfo, effectMask, unit,	m_originalCaster, 
-				(aurSpellInfo == m_spellInfo)? &m_spellValue->EffectBasePoints[0] : &basePoints[0], m_CastItem, 0, &refresh, !(_triggeredCastFlags & TRIGGERED_NO_PERIODIC_RESET));
+			if (unit->IsImmunedToSpell(aurSpellInfo))
+				return SPELL_MISS_IMMUNE;
+			else
+				m_spellAura = Aura::TryRefreshStackOrCreate(aurSpellInfo, effectMask, unit,	m_originalCaster, 
+					(aurSpellInfo == m_spellInfo)? &m_spellValue->EffectBasePoints[0] : &basePoints[0], m_CastItem, 0, &refresh, !(_triggeredCastFlags & TRIGGERED_NO_PERIODIC_RESET));
 
 			// xinef: if aura was not refreshed, add proc ex
 			if (!refresh)
@@ -3594,7 +3620,7 @@ void Spell::_cast(bool skipCheck)
     SendSpellGo();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
-    if (((m_spellInfo->Speed > 0.0f || GetCCDelay(m_spellInfo) > 0) && !m_spellInfo->IsChanneled()) || m_spellInfo->Id == 14157 || m_spellInfo->Id == 70802)
+	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled() || m_spellInfo->AttributesEx4 & SPELL_ATTR4_UNK4)
     {
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
         // in case delayed spell remove item at cast delay start
@@ -3645,12 +3671,6 @@ void Spell::_cast(bool skipCheck)
         if (Unit* target = m_targets.GetUnitTarget())
             if (target->GetTypeId() == TYPEID_UNIT)
                 m_caster->CastSpell(target, 32747, true);
-
-	// xinef: start combat at cast for delayed spells, only for explicit target
-	if (Unit* target = m_targets.GetUnitTarget())
-		if (m_caster->GetTypeId() == TYPEID_PLAYER || (m_caster->IsPet() && m_caster->IsControlledByPlayer()))
-			if (GetDelayMoment() > 0 && !m_caster->IsFriendlyTo(target) && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT) && (!m_spellInfo->IsPositive() || m_spellInfo->HasEffect(SPELL_EFFECT_DISPEL)))
-				m_caster->CombatStartOnCast(target, !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO), GetDelayMoment() + 500); // xinef: increase this time so we dont leave and enter combat in a moment
 
     SetExecutedCurrently(false);
 }
@@ -5017,7 +5037,7 @@ void Spell::HandleThreatSpells()
     if (m_UniqueTargetInfo.empty())
         return;
 
-    if (m_spellInfo->HasAttribute(SPELL_ATTR1_NO_THREAT) || m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO))
+	if (m_spellInfo->HasInitialAggro())
         return;
 
     float threat = 0.0f;
@@ -6173,199 +6193,6 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
             return SPELL_FAILED_NOT_READY;
 
     return CheckCast(true);
-}
-
-uint32 Spell::GetCCDelay(SpellInfo const* _spell)
-{
-    // CCD for spell with auras
-    AuraType auraWithCCD[] = 
-    {
-        SPELL_AURA_MOD_STUN,
-        SPELL_AURA_MOD_CONFUSE,
-        SPELL_AURA_MOD_FEAR,
-        SPELL_AURA_MOD_SILENCE,
-        SPELL_AURA_MOD_DISARM,
-        SPELL_AURA_MOD_ROOT,
-        SPELL_AURA_MOD_POSSESS
-    };
-    uint8 CCDArraySize = 7;
-
-    const uint32 delayForRoots           = 200; // currently unused
-    const uint32 delayForStuns           = 200;
-    const uint32 delayForDisarms         = 200; // currently unused
-    const uint32 delayForDisorients      = 200;
-    const uint32 delayForFears           = 200;
-    const uint32 delayForHorrors         = 200;
-    const uint32 delayForOpenerStuns     = 200;
-    const uint32 delayForScatters        = 200;
-    const uint32 delayForBanishes        = 200;
-    const uint32 NOdelayForInstantSpells = 200;
-
-    switch(_spell->SpellFamilyName)
-    {
-        case SPELLFAMILY_DEATHKNIGHT:
-            // Death Grip
-            if (_spell->Id == 49576)
-                return NOdelayForInstantSpells;
-            // Hungering Cold
-            if (_spell->Id == 49203)
-                return delayForDisorients;
-            // Gnaw (ghoul's stun)
-            if (_spell->Id == 47481)
-                return delayForStuns;
-            break;
-        case SPELLFAMILY_DRUID:
-            // Bash
-            if (_spell->Id == 5211)
-                return delayForStuns;
-            // Cyclone
-            if (_spell->Id == 33786)
-                return delayForBanishes;
-            // Hibernate 
-            if (_spell->Id == 2637)
-                return delayForDisorients;
-            // Feral charge
-            if (_spell->Id == 45334)
-                return NOdelayForInstantSpells; 
-            // Maim
-            if (_spell->Id == 22570)
-                return delayForStuns;
-            // Pounce
-            if (_spell->Id == 9005)
-                return delayForOpenerStuns;
-            break;
-        case SPELLFAMILY_HUNTER: // TODO all pet's cc 
-            // Traps
-            if (_spell->SpellFamilyFlags[0] & 0x8 || // Frozen trap
-                _spell->Id == 57879 || // Snake Trap
-                _spell->SpellFamilyFlags[2] & 0x00024000) // Explosive and Immolation Trap
-                return 0;
-            // Entrapment
-            if (_spell->SpellIconID == 20)
-                return 0;
-            // Scatter Shot
-            if (_spell->Id == 19503)
-                return delayForScatters;
-            // Wyvern Sting
-            if (_spell->Id == 19386)
-                return delayForDisorients;
-            break;
-        case SPELLFAMILY_MAGE:
-             // Deep Freeze
-            if (_spell->Id == 44572)
-                return delayForStuns;
-            // Dragon Breath
-            if (_spell->Id == 42950)
-                return delayForDisorients;
-            // Impact
-            if (_spell->Id == 64343)
-                return delayForStuns;
-            // Polymorph
-            if (_spell->Id == 12826)
-                return delayForDisorients;
-            break;
-        case SPELLFAMILY_PALADIN:
-            // Hammer of Justice
-            if (_spell->Id == 853)
-                return delayForStuns;
-            // Repentance
-            if (_spell->Id == 20066)
-                return delayForDisorients;
-            // Turn Evil
-            if (_spell->Id == 10326)
-                return delayForFears;
-            break;
-        case SPELLFAMILY_PRIEST:
-            // Psychic Scream
-            if (_spell->Id == 10890)
-                 return delayForFears;
-            // Mind Control
-            if (_spell->Id == 605)
-                return delayForBanishes;
-            // Psychic Horror
-            if (_spell->Id == 64044)
-                return delayForHorrors;
-            // Shackle Undead
-            if (_spell->Id == 9484)
-                return delayForDisorients;
-            break;
-        case SPELLFAMILY_ROGUE:
-            // Blind
-            if (_spell->Id == 2094)
-                return delayForDisorients;
-            // CheapShot
-            if (_spell->Id == 1833)
-                return delayForOpenerStuns;
-            // Gouge
-            if (_spell->Id == 1776)
-                return delayForDisorients;
-            // Kidney Shot
-            if (_spell->Id == 408)
-                return delayForStuns;
-            // Sap
-            if (_spell->Id == 6770)
-                return delayForDisorients;
-            break;
-        case SPELLFAMILY_SHAMAN:
-            // Hex
-            if (_spell->Id == 51514)
-                return delayForDisorients;
-            break;
-        case SPELLFAMILY_WARLOCK: // TODO felguard's intercept(27826?), seduction
-            // Banish
-            if (_spell->Id == 710)
-                return delayForBanishes;
-            // DeathCoil
-            if (_spell->Id == 27223)
-                return delayForHorrors;
-            // Demon charge 
-            if (_spell->Id == 60995) // might use 54785 - req testing
-                return delayForStuns;
-            // Fear
-            if (_spell->Id == 5782)
-                return delayForFears;
-            // Howl of Terror
-            if (_spell->Id == 5484)
-                return delayForFears;
-            // Shadowfury
-            if (_spell->Id == 30283)
-                return delayForStuns;
-            // Spell Lock - Debuff
-            if (_spell->Id == 24259)
-                return NOdelayForInstantSpells;
-           break;
-        case SPELLFAMILY_WARRIOR:
-            // Charge
-            if (_spell->Id == 7922)
-                return delayForOpenerStuns;
-            // Charge trig.
-            if (_spell->Id == 65929)
-                return delayForStuns;
-            // Concussion Blow
-            if (_spell->Id == 12809)
-                return delayForStuns;
-            // Intercept
-            if (_spell->Id == 20253)
-                return delayForStuns;
-            // Intimidating Shout
-            if (_spell->Id == 20511)
-                return delayForFears;
-            // Shockwave
-            if (_spell->Id == 46968)
-                return delayForStuns;
-            break;    
-        case SPELLFAMILY_GENERIC: // is that ok?!
-            // War Stomp - Tauren's racial
-            if (_spell->Id == 46026)
-                return delayForStuns;
-            break;
-    }
-
-    for (uint8 i = 0; i < CCDArraySize; ++i)
-         if (_spell->HasAura(auraWithCCD[i]))
-             return NOdelayForInstantSpells;
-
-    return 0;
 }
 
 SpellCastResult Spell::CheckCasterAuras(bool preventionOnly) const
@@ -8335,7 +8162,6 @@ void Spell::CancelGlobalCooldown()
     else if (m_caster->GetTypeId() == TYPEID_PLAYER)
         m_caster->ToPlayer()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
 }
-
 
 namespace Trinity
 {

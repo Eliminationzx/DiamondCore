@@ -819,7 +819,6 @@ bool Guardian::InitStatsForLevel(uint8 petlevel)
                 }
                 case NPC_MIRROR_IMAGE: // Mirror Image
                 {
-                    SetDisplayId(m_owner->GetDisplayId());
                     if (!pInfo)
                     {
                         SetCreateMana(28 + 30*petlevel);
