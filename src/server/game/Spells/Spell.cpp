@@ -2260,7 +2260,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 		if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
 			m_delayMoment = targetInfo.timeDelay;
 	}
-	else if (!m_triggeredByAuraSpell && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster != target)
+	else if (!IsTriggered() && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster != target)
 	{
 		// Client latency calculation
 		uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
