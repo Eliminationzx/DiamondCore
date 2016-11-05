@@ -36,7 +36,7 @@ enum Spells
     SPELL_CHANNEL           = 45537,
     SPELL_EGG_DESTROY       = 19873,
 
-    SPELL_CLEAVE            = 19632,
+    SPELL_CLEAVE            = 22540,
     SPELL_WARSTOMP          = 24375,
     SPELL_FIREBALLVOLLEY    = 22425,
     SPELL_CONFLAGRATION     = 23023
@@ -189,12 +189,6 @@ class spell_egg_event : public SpellScriptLoader
             {
                 if (InstanceScript* instance = GetCaster()->GetInstanceScript())
                     instance->SetData(DATA_EGG_EVENT, SPECIAL);
-								
-                 if (GameObject* egg = GetCaster()->FindNearestGameObject(GO_EGG, 100))
-                 {
-                     egg->SetLootState(GO_READY);
-                     egg->UseDoorOrButton(10000);
-                 }
             }
 
             void Register()

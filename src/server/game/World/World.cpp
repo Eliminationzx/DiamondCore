@@ -51,7 +51,6 @@
 #include "BattlegroundMgr.h"
 #include "BattlefieldMgr.h"
 #include "OutdoorPvPMgr.h"
-#include "AnticheatMgr.h"
 #include "TemporarySummon.h"
 #include "WaypointMovementGenerator.h"
 #include "VMapFactory.h"
@@ -119,7 +118,7 @@ World::World()
     m_NextRandomBGReset = 0;
     m_NextGuildReset = 0;
 
-    m_defaultDbcLocale = LOCALE_ruRU;
+    m_defaultDbcLocale = LOCALE_enUS;
 
     mail_expire_check_timer = 0;
     m_updateTime = 0;
@@ -1215,16 +1214,10 @@ void World::LoadConfigSettings(bool reload)
 
     // MySQL ping time interval
     m_int_configs[CONFIG_DB_PING_INTERVAL] = sConfigMgr->GetIntDefault("MaxPingTime", 30);
-	
-	m_bool_configs[CONFIG_LFG_LOCATION_ALL] = sConfigMgr->GetBoolDefault("LFG.Location.All", true);
 
     // misc
     m_bool_configs[CONFIG_PDUMP_NO_PATHS] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowPaths", true);
     m_bool_configs[CONFIG_PDUMP_NO_OVERWRITE] = sConfigMgr->GetBoolDefault("PlayerDump.DisallowOverwrite", true);
-	m_bool_configs[CONFIG_ANTICHEAT_ENABLE] = sConfigMgr->GetBoolDefault("Anticheat.Enable", true);
-    m_int_configs[CONFIG_ANTICHEAT_REPORTS_INGAME_NOTIFICATION] = sConfigMgr->GetIntDefault("Anticheat.ReportsForIngameWarnings", 70);
-    m_int_configs[CONFIG_ANTICHEAT_DETECTIONS_ENABLED] = sConfigMgr->GetIntDefault("Anticheat.DetectionsEnabled",31);
-    m_int_configs[CONFIG_ANTICHEAT_MAX_REPORTS_FOR_DAILY_REPORT] = sConfigMgr->GetIntDefault("Anticheat.MaxReportsForDailyReport",70);
     m_bool_configs[CONFIG_FREE_DUAL_SPEC] = sConfigMgr->GetBoolDefault("FreeDualTalentSpecialization", false);
     m_bool_configs[CONFIG_ENABLE_MMAPS] = sConfigMgr->GetBoolDefault("MoveMaps.Enable", true);
     MMAP::MMapFactory::InitializeDisabledMaps();
@@ -1855,11 +1848,11 @@ void World::DetectDBCLang()
         }
     }
 
-    //if (locale != GetDefaultDbcLocale())
-    //{
-    //    sLog->outError("Unable to determine your DBC Locale! (corrupt DBC?)");
-    //    exit(1);
-    //}
+    if (locale != GetDefaultDbcLocale())
+    {
+        sLog->outError("Unable to determine your DBC Locale! (corrupt DBC?)");
+        exit(1);
+    }
 
     sLog->outString("Using %s DBC Locale as default. All available DBC locales: %s", localeNames[GetDefaultDbcLocale()], availableLocalsStr.empty() ? "<none>" : availableLocalsStr.c_str());
     sLog->outString();
@@ -2824,8 +2817,6 @@ void World::ResetDailyQuests()
 
     // change available dailies
     sPoolMgr->ChangeDailyQuests();
-	
-    sAnticheatMgr->ResetDailyReportStates();
 }
 
 void World::LoadDBAllowedSecurityLevel()

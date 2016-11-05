@@ -78,9 +78,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket & recvData)
 			case CHAT_MSG_PARTY_LEADER:
 				break;
 			default:
-				if (sender->GetTotalPlayedTime() < 0.25*HOUR)
+				if (sender->GetTotalPlayedTime() < 2*HOUR)
 				{
-					SendNotification("Писать в общий чат будет можно после 25 минут игры. Вы можете использовать чат пати или гильдии !");
+					SendNotification("Speaking is allowed after playing for at least 2 hours. You may use party and guild chat.");
 					recvData.rfinish();
 					return;
 				}

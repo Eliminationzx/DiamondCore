@@ -16,7 +16,6 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AnticheatMgr.h"
 #include "Unit.h"
 #include "Common.h"
 #include "Battlefield.h"
@@ -404,18 +403,6 @@ void Unit::Update(uint32 p_time)
         }
     }
 
-	// update forced visibility
-    if (m_forcedVisibilityTimer > 0)
-    {
-        if (m_forcedVisibilityTimer <= p_time)
-        {
-            m_forcedVisibilityTimer = 0;
-            UpdateObjectVisibility();
-        }
-        else
-            m_forcedVisibilityTimer -= p_time;
-    }
-
     // not implemented before 3.0.2
 	// xinef: if attack time > 0, reduce by diff
 	// if on next update, attack time < 0 assume player didnt attack - set to 0
@@ -662,7 +649,7 @@ bool Unit::HasBreakableByDamageAuraType(AuraType type, uint32 excludeAura) const
     AuraEffectList const& auras = GetAuraEffectsByType(type);
     for (AuraEffectList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
         if ((!excludeAura || excludeAura != (*itr)->GetSpellInfo()->Id) && //Avoid self interrupt of channeled Crowd Control spells like Seduction
-            ((*itr)->GetSpellInfo()->AuraInterruptFlags & (AURA_INTERRUPT_FLAG_TAKE_DAMAGE | AURA_INTERRUPT_FLAG_TAKE_DAMAGE_NOT_TRIGGERED)))
+            ((*itr)->GetSpellInfo()->AuraInterruptFlags & AURA_INTERRUPT_FLAG_TAKE_DAMAGE))
             return true;
     return false;
 }
@@ -4541,7 +4528,7 @@ void Unit::RemoveAurasByShapeShift()
     {
         Aura const* aura = iter->second->GetBase();
 		if ((aura->GetSpellInfo()->GetAllEffectsMechanicMask() & mechanic_mask) && 
-			((aura->GetSpellInfo()->SpellFamilyName == SPELLFAMILY_WARRIOR && (aura->GetSpellInfo()->SpellFamilyFlags[1] & 0x20))))
+			(!aura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_CU_AURA_CC) || (aura->GetSpellInfo()->SpellFamilyName == SPELLFAMILY_WARRIOR && (aura->GetSpellInfo()->SpellFamilyFlags[1] & 0x20))))
         {
             RemoveAura(iter);
             continue;
@@ -12405,6 +12392,33 @@ void Unit::CombatStart(Unit* target, bool initialAggro)
     }
 }
 
+void Unit::CombatStartOnCast(Unit* target, bool initialAggro, uint32 duration)
+{ 
+	// Xinef: Dont allow to start combat with triggers
+	if (target->GetTypeId() == TYPEID_UNIT && target->ToCreature()->IsTrigger())
+		return;
+
+    if (initialAggro)
+    {
+        SetInCombatWith(target, duration);
+
+		// Xinef: If pet started combat - put owner in combat
+		if (Unit* owner = GetOwner())
+			owner->SetInCombatWith(target, duration);
+    }
+
+    Unit* who = target->GetCharmerOrOwnerOrSelf();
+    if (who->GetTypeId() == TYPEID_PLAYER)
+      SetContestedPvP(who->ToPlayer());
+
+    Player* me = GetCharmerOrOwnerPlayerOrPlayerItself();
+    if (me && who->IsPvP() && (who->GetTypeId() != TYPEID_PLAYER || !me->duel || me->duel->opponent != who))
+    {
+        me->UpdatePvP(true);
+        me->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
+    }
+}
+
 void Unit::SetInCombatState(bool PvP, Unit* enemy, uint32 duration)
 { 
     // only alive units can be in combat
@@ -12552,7 +12566,7 @@ bool Unit::_IsValidAttackTarget(Unit const* target, SpellInfo const* bySpell, Wo
 				return false;
 
     // can't attack invisible (ignore stealth for aoe spells) also if the area being looked at is from a spell use the dynamic object created instead of the casting unit.
-	if ((!bySpell || !bySpell->HasAttribute(SPELL_ATTR6_CAN_TARGET_INVISIBLE)) && (obj ? !obj->CanSeeOrDetect(target, bySpell && bySpell->IsAffectingArea()) : !CanSeeOrDetect(target, bySpell && bySpell->IsAffectingArea())))
+	if ((!bySpell || !bySpell->HasAttribute(SPELL_ATTR6_CAN_TARGET_INVISIBLE)) && (obj ? !obj->CanSeeOrDetect(target, bySpell && bySpell->IsAffectingArea()) : !CanSeeOrDetect(target, bySpell && bySpell->IsAffectingArea() && !bySpell->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO))))
         return false;
 
     // can't attack dead
@@ -12847,9 +12861,6 @@ bool Unit::IsAlwaysVisibleFor(WorldObject const* seer) const
     if (WorldObject::IsAlwaysVisibleFor(seer))
         return true;
 
-	if (IsVisibilityForced())
-        return true;
-
     // Always seen by owner
     if (uint64 guid = GetCharmerOrOwnerGUID())
         if (seer->GetGUID() == guid)
@@ -12901,10 +12912,7 @@ void Unit::SetModelVisible(bool on)
 }
 
 void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
-{
-    //if (this->ToPlayer())
-    //    sAnticheatMgr->DisableAnticheatDetection(this->ToPlayer());
-	
+{ 
     int32 main_speed_mod  = 0;
     float stack_bonus     = 1.0f;
     float non_stack_bonus = 1.0f;
@@ -14998,7 +15006,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
         // "handled" is needed as long as proc can be handled in multiple places
         if (!handled && HandleAuraProc(target, damage, i->aura, procSpell, procFlag, procExtra, cooldown, &handled))
         {
-            //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell %u (triggered with value by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), Id);
+            ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell %u (triggered with value by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), Id);
             takeCharges = true;
         }
 
@@ -15022,7 +15030,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
             {
                 case SPELL_AURA_PROC_TRIGGER_SPELL:
                 {
-                    //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell %u (triggered by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
+                    ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell %u (triggered by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
                     // Don`t drop charge or add cooldown for not started trigger
                     if (HandleProcTriggerSpell(target, damage, triggeredByAura, procSpell, procFlag, procExtra, cooldown))
                         takeCharges = true;
@@ -15041,7 +15049,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                 case SPELL_AURA_MANA_SHIELD:
                 case SPELL_AURA_DUMMY:
                 {
-                    //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell id %u (triggered by %s dummy aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
+                    ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell id %u (triggered by %s dummy aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
                     if (HandleDummyAuraProc(target, damage, triggeredByAura, procSpell, procFlag, procExtra, cooldown))
                         takeCharges = true;
                     break;
@@ -15055,14 +15063,14 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                     break;
                 case SPELL_AURA_OVERRIDE_CLASS_SCRIPTS:
                 {
-                    //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell id %u (triggered by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
+                    ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell id %u (triggered by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
                     if (HandleOverrideClassScriptAuraProc(target, damage, triggeredByAura, procSpell, cooldown))
                         takeCharges = true;
                     break;
                 }
                 case SPELL_AURA_RAID_PROC_FROM_CHARGE_WITH_VALUE:
                 {
-                    //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting mending (triggered by %s dummy aura of spell %u)",
+                    ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting mending (triggered by %s dummy aura of spell %u)",
                     //    (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
 
                     if (damage > 0)
@@ -15074,7 +15082,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                 }
                 case SPELL_AURA_RAID_PROC_FROM_CHARGE:
                 {
-                    //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting mending (triggered by %s dummy aura of spell %u)",
+                    ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting mending (triggered by %s dummy aura of spell %u)",
                     //    (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
 
                     HandleAuraRaidProcFromCharge(triggeredByAura);
@@ -15083,7 +15091,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                 }
                 case SPELL_AURA_PROC_TRIGGER_SPELL_WITH_VALUE:
                 {
-                    //sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell %u (triggered with value by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
+                    ;//sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "ProcDamageAndSpell: casting spell %u (triggered with value by %s aura of spell %u)", spellInfo->Id, (isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
 
                     if (HandleProcTriggerSpell(target, damage, triggeredByAura, procSpell, procFlag, procExtra, cooldown))
                         takeCharges = true;
@@ -15138,9 +15146,11 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* target, uint32 procFlag, u
                 case SPELL_AURA_MOD_ROOT:
                 case SPELL_AURA_TRANSFORM:
                 {
-					// Don't break auras from procing triggered spells from trigger
-					if (procSpell && (procSpell->AttributesEx2 & SPELL_ATTR2_TRIGGERED_CAN_TRIGGER_PROC) && (spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_TAKE_DAMAGE_NOT_TRIGGERED))
-						break;
+					// Spell own direct damage at apply wont break the CC
+					// Xinef: Or when the aura is at full duration (assume that such auras should be added at the end, skipping all damage procs etc.)
+                    if (procSpell)
+                        if ((!i->aura->IsPermanent() && i->aura->GetDuration() == i->aura->GetMaxDuration()) || procSpell->Id == triggeredByAura->GetId() || procSpell->HasAttribute(SPELL_ATTR4_DAMAGE_DOESNT_BREAK_AURAS))
+                            break;
 
                     // chargeable mods are breaking on hit
                     if (useCharges)
@@ -15418,7 +15428,7 @@ void Unit::RestoreDisplayId()
 	if (!handledAuraForced && !handledAura)
 	{
 		Unit::AuraEffectList const& cloneAuras = GetAuraEffectsByType(SPELL_AURA_CLONE_CASTER);
-		if (!cloneAuras.empty() && !transforms.empty())
+		if (!cloneAuras.empty())
 			for (Unit::AuraEffectList::const_iterator i = cloneAuras.begin(); i != cloneAuras.end(); ++i)
 				handledAura = *i;
 	}

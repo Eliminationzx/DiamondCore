@@ -60,77 +60,6 @@
 #include "GameObjectAI.h"
 #include "ArenaSpectator.h"
 
-#include "Player.h"
-#include "AccountMgr.h"
-#include "AchievementMgr.h"
-#include "AnticheatMgr.h"
-#include "ArenaTeam.h"
-#include "ArenaTeamMgr.h"
-#include "Battlefield.h"
-#include "BattlefieldMgr.h"
-#include "BattlefieldWG.h"
-#include "Battleground.h"
-#include "BattlegroundAV.h"
-#include "BattlegroundMgr.h"
-#include "CellImpl.h"
-#include "Channel.h"
-#include "ChannelMgr.h"
-#include "CharacterDatabaseCleaner.h"
-#include "Chat.h"
-#include "Common.h"
-#include "ConditionMgr.h"
-#include "CreatureAI.h"
-#include "DatabaseEnv.h"
-#include "DisableMgr.h"
-#include "Formulas.h"
-#include "GameEventMgr.h"
-#include "GossipDef.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "Group.h"
-#include "GroupMgr.h"
-#include "Guild.h"
-#include "GuildMgr.h"
-#include "InstanceSaveMgr.h"
-#include "InstanceScript.h"
-#include "Language.h"
-#include "LFGMgr.h"
-#include "Log.h"
-#include "LootItemStorage.h"
-#include "MapInstanced.h"
-#include "MapManager.h"
-#include "ObjectAccessor.h"
-#include "ObjectMgr.h"
-#include "Opcodes.h"
-#include "OutdoorPvP.h"
-#include "OutdoorPvPMgr.h"
-#include "Pet.h"
-#include "PetitionMgr.h"
-#include "QuestDef.h"
-#include "ReputationMgr.h"
-#include "SkillDiscovery.h"
-#include "SocialMgr.h"
-#include "Spell.h"
-#include "SpellAuraEffects.h"
-#include "SpellAuras.h"
-#include "SpellMgr.h"
-#include "Transport.h"
-#include "UpdateData.h"
-#include "UpdateFieldFlags.h"
-#include "UpdateMask.h"
-#include "Util.h"
-#include "Vehicle.h"
-#include "Weather.h"
-#include "WeatherMgr.h"
-#include "World.h"
-#include "WorldPacket.h"
-#include "WorldSession.h"
-#include "ArenaSpectator.h"
-#include "GameObjectAI.h"
-#include "PoolMgr.h"
-#include "SavingSystem.h"
-#include "../Custom/Transmogrification.h"
-
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
 SpellDestination::SpellDestination()
@@ -2246,8 +2175,8 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 
     // Spell have speed - need calculate incoming time
     // Incoming time is zero for self casts. At least I think so.
-	if (m_caster != target)
-	{
+    if (m_spellInfo->Speed > 0.0f && m_caster != target)
+    {
 		if (m_spellInfo->Speed > 0.0f)
 		{
 			// calculate spell incoming interval
@@ -2262,22 +2191,14 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 			if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
 				m_delayMoment = targetInfo.timeDelay;
 		}
-		/*else if (!m_triggeredByAuraSpell)
+		else if (!m_triggeredByAuraSpell)
 		{
-			if (Player* player = m_caster->ToPlayer())
-			{
-				// Client latency calculation
-				uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
-				targetInfo.timeDelay = m_clientLatency > MAX_CLIENT_LATENCY_NORM ? MAX_CLIENT_LATENCY_NORM / 2 : m_clientLatency;
-
-				// Don't set delay moment at every time
-				if (m_delayMoment == 0 || m_delayMoment != targetInfo.timeDelay)
-					m_delayMoment = targetInfo.timeDelay;
-			}
-		}*/
-	}
-	else
-		targetInfo.timeDelay = 0LL;
+			targetInfo.timeDelay = GetClientLatency();
+			m_delayMoment = GetClientLatency();
+		}
+    }
+    else
+        targetInfo.timeDelay = 0LL;
 
     // If target reflect spell back to caster
     if (targetInfo.missCondition == SPELL_MISS_REFLECT)
@@ -2435,15 +2356,15 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         return;
 
 	// Xinef: absorb delayed projectiles for 500ms
-	if (getState() == SPELL_STATE_DELAYED && !m_caster->IsFriendlyTo(effectUnit) &&
-		(World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + SANCTUARY_TIME_DELAY) &&
-		effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
-		)
-	{
-		if (m_spellInfo->CalcCastTime(m_caster, this) < 2000 && m_spellInfo->Speed == 0.0f)
-			effectUnit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
-		return;                                             // No missinfo in that case
-	}
+    if (getState() == SPELL_STATE_DELAYED && !m_spellInfo->IsTargetingArea() && !m_spellInfo->IsPositive() &&
+        (World::GetGameTimeMS() - target->timeDelay) <= effectUnit->m_lastSanctuaryTime && World::GetGameTimeMS() < (effectUnit->m_lastSanctuaryTime + 500) &&
+        effectUnit->FindMap() && !effectUnit->FindMap()->IsDungeon()
+        )
+    {
+        if (m_spellInfo->CalcCastTime(m_caster, this) < 2000 && m_spellInfo->Speed == 0.0f)
+            effectUnit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
+        return;                                             // No missinfo in that case
+    }
 
     // Get original caster (if exist) and calculate damage/healing from him data
     Unit* caster = m_originalCaster ? m_originalCaster : m_caster;
@@ -2703,10 +2624,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
 
 	if (missInfo != SPELL_MISS_EVADE && !m_caster->IsFriendlyTo(effectUnit))
     {
-		m_caster->CombatStart(effectUnit, !m_spellInfo->HasInitialAggro());
+        m_caster->CombatStart(effectUnit, m_spellInfo->HasInitialAggro());
 
-        if (!effectUnit->IsStandState())
- 			effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
+		if (!effectUnit->IsStandState())
+			effectUnit->SetStandState(UNIT_STAND_STATE_STAND);
     }
 
     if (spellHitTarget)
@@ -2738,12 +2659,9 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
     if (!unit || !effectMask)
         return SPELL_MISS_EVADE;
 
-	// For delayed spells immunity may be applied between missile launch and hit - check immunity for that case
-	SpellMissInfo missinfo = SPELL_MISS_NONE;
-	if (m_spellInfo->Speed)
-		missinfo = m_caster->SpellHitResult(unit, m_spellInfo, true);
-	if (missinfo == SPELL_MISS_IMMUNE)
-		return SPELL_MISS_IMMUNE;
+    // For delayed spells immunity may be applied between missile launch and hit - check immunity for that case
+	if (m_spellInfo->Speed && ((m_damage > 0 && unit->IsImmunedToDamage(m_spellInfo)) || unit->IsImmunedToSchool(m_spellInfo) || unit->IsImmunedToSpell(m_spellInfo)))
+        return SPELL_MISS_IMMUNE;
 
     // disable effects to which unit is immune
     SpellMissInfo returnVal = SPELL_MISS_IMMUNE;
@@ -2789,7 +2707,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         m_caster->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL2, m_spellInfo->Id, 0, unit);
     }
 
-   if (m_caster != unit)
+	if (m_caster != unit)
 	{
 		// Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
 		if (m_spellInfo->Speed > 0.0f && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
@@ -2810,12 +2728,9 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
 				if (m_caster->GetTypeId() == TYPEID_PLAYER)
 					m_caster->ToPlayer()->UpdatePvP(true);
 			}
-			if (unit->IsInCombat() && !m_spellInfo->HasInitialAggro() && !m_triggeredByAuraSpell)
+			if (unit->IsInCombat() && m_spellInfo->HasInitialAggro())
 			{
-				// xinef: start combat with hostile unit...
-				if (Unit* hostile = unit->getAttackerForHelper())
-					m_caster->CombatStart(hostile, true);
-				//m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
+				m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
 				unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
 			}
 		}
@@ -2862,6 +2777,10 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
             unit->IncrDiminishing(m_diminishGroup);
     }
 
+	// Xinef: Stealth remove, added UGLY hack for mass dispel... cant find any other solution, ugly hack for Storm, Earth and Fire talent
+	if (m_caster != unit && m_caster->IsHostileTo(unit) && !m_spellInfo->IsPositive() && !m_triggeredByAuraSpell && m_spellInfo->SpellIconID != 2267 && unit->IsControlledByPlayer() && (!m_caster->IsTotem() || m_spellInfo->Id == 64695))
+		unit->RemoveAurasByType(SPELL_AURA_MOD_STEALTH);
+
     if (aura_effmask)
     {
         // Select rank for aura with level requirements only in specific cases
@@ -2886,11 +2805,8 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         if (m_originalCaster)
         {
             bool refresh = false;
-			if (unit->IsImmunedToSpell(aurSpellInfo))
-				return SPELL_MISS_IMMUNE;
-			else
-				m_spellAura = Aura::TryRefreshStackOrCreate(aurSpellInfo, effectMask, unit,	m_originalCaster, 
-					(aurSpellInfo == m_spellInfo)? &m_spellValue->EffectBasePoints[0] : &basePoints[0], m_CastItem, 0, &refresh, !(_triggeredCastFlags & TRIGGERED_NO_PERIODIC_RESET));
+            m_spellAura = Aura::TryRefreshStackOrCreate(aurSpellInfo, effectMask, unit,	m_originalCaster, 
+				(aurSpellInfo == m_spellInfo)? &m_spellValue->EffectBasePoints[0] : &basePoints[0], m_CastItem, 0, &refresh, !(_triggeredCastFlags & TRIGGERED_NO_PERIODIC_RESET));
 
 			// xinef: if aura was not refreshed, add proc ex
 			if (!refresh)
@@ -3272,10 +3188,6 @@ void Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
 
     // calculate cast time (calculated after first CheckCast check to prevent charge counting for first CheckCast fail)
     m_casttime = (_triggeredCastFlags & TRIGGERED_CAST_DIRECTLY) ? 0 : m_spellInfo->CalcCastTime(m_caster, this);
-	        
-    // if config enable and spell used hearthstone
-    if (sConfigMgr->GetBoolDefault("HearthstoneSpell.Toggle", false) && m_spellInfo->Id == 8690)
-    m_casttime = sConfigMgr->GetIntDefault("HearthstoneSpell.CastTime", 10000);
 
     // don't allow channeled spells / spells with cast time to be casted while moving
     // (even if they are interrupted on moving, spells with almost immediate effect get to have their effect processed before movement interrupter kicks in)
@@ -3445,9 +3357,6 @@ void Spell::cast(bool skipCheck)
 
 	if (lastMod)
 		modOwner->SetSpellModTakingSpell(lastMod, true);
-	
-    if (m_spellInfo->Id == 8690 && sConfigMgr->GetBoolDefault("HearthstoneSpell.Toggle", false) && sConfigMgr->GetBoolDefault("HearthstoneSpell.NoCD", false))
-        m_caster->ToPlayer()->RemoveSpellCooldown(m_spellInfo->Id, true);
 }
 
 void Spell::_cast(bool skipCheck)
@@ -3612,9 +3521,6 @@ void Spell::_cast(bool skipCheck)
     // we must send smsg_spell_go packet before m_castItem delete in TakeCastItem()...
     SendSpellGo();
 
-	if (m_targets.GetUnitTarget() && !m_caster->IsFriendlyTo(m_targets.GetUnitTarget()))
-		m_caster->CombatStart(m_targets.GetUnitTarget(), !m_spellInfo->HasInitialAggro());
-
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
 	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled() || m_spellInfo->AttributesEx4 & SPELL_ATTR4_UNK4)
     {
@@ -3667,6 +3573,12 @@ void Spell::_cast(bool skipCheck)
         if (Unit* target = m_targets.GetUnitTarget())
             if (target->GetTypeId() == TYPEID_UNIT)
                 m_caster->CastSpell(target, 32747, true);
+
+	// xinef: start combat at cast for delayed spells, only for explicit target
+	if (Unit* target = m_targets.GetUnitTarget())
+		if (m_caster->GetTypeId() == TYPEID_PLAYER || (m_caster->IsPet() && m_caster->IsControlledByPlayer()))
+			if (GetDelayMoment() > 0 && !m_caster->IsFriendlyTo(target) && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT) && (!m_spellInfo->IsPositive() || m_spellInfo->HasEffect(SPELL_EFFECT_DISPEL)))
+				m_caster->CombatStartOnCast(target, !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO), GetDelayMoment() + 500); // xinef: increase this time so we dont leave and enter combat in a moment
 
     SetExecutedCurrently(false);
 }
@@ -5033,7 +4945,7 @@ void Spell::HandleThreatSpells()
     if (m_UniqueTargetInfo.empty())
         return;
 
-	if (m_spellInfo->HasInitialAggro())
+	if (!m_spellInfo->HasInitialAggro())
         return;
 
     float threat = 0.0f;
@@ -8113,11 +8025,6 @@ void Spell::TriggerGlobalCooldown()
 		else
 			return;
 	}
-	
-	if (m_caster->GetTypeId() == TYPEID_PLAYER)
-	if (m_spellInfo->Id == 8690 && sConfigMgr->GetBoolDefault("HearthstoneSpell.Toggle", false) && sConfigMgr->GetBoolDefault("HearthstoneSpell.NoCD", false))
-           return;
-
 
     // Global cooldown can't leave range 1..1.5 secs
     // There are some spells (mostly not casted directly by player) that have < 1 sec and > 1.5 sec global cooldowns
@@ -8157,6 +8064,24 @@ void Spell::CancelGlobalCooldown()
         m_caster->GetCharmInfo()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
     else if (m_caster->GetTypeId() == TYPEID_PLAYER)
         m_caster->ToPlayer()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
+}
+
+uint64 Spell::GetClientLatency() const
+{
+	uint64 m_clientLatency = 0;
+	uint64 m_clientLatencyNorm = 0;
+	Player* player = m_caster->ToPlayer();
+
+	if (player)
+	{
+		m_clientLatency = uint64(player->GetSession()->GetLatency());
+		// Client latency normalization
+		m_clientLatencyNorm = m_clientLatency * 2;
+		if (m_clientLatencyNorm > MAX_CLIENT_LATENCY_NORM)
+			m_clientLatency = 0L;
+	}
+
+	return m_clientLatency;
 }
 
 namespace Trinity

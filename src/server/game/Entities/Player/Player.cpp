@@ -19,7 +19,6 @@
 #include "Player.h"
 #include "AccountMgr.h"
 #include "AchievementMgr.h"
-#include "AnticheatMgr.h"
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
 #include "Battlefield.h"
@@ -84,75 +83,6 @@
 #include "ArenaSpectator.h"
 #include "GameObjectAI.h"
 #include "PoolMgr.h"
-#include "SavingSystem.h"
-#include "../Custom/Transmogrification.h"
-
-#include "Common.h"
-#include "DatabaseEnv.h"
-#include "Config.h"
-#include "SystemConfig.h"
-#include "Log.h"
-#include "Opcodes.h"
-#include "WorldSession.h"
-#include "WorldPacket.h"
-#include "Player.h"
-#include "Vehicle.h"
-#include "SkillExtraItems.h"
-#include "SkillDiscovery.h"
-#include "World.h"
-#include "AccountMgr.h"
-#include "AchievementMgr.h"
-#include "AuctionHouseMgr.h"
-#include "ObjectMgr.h"
-#include "ArenaTeamMgr.h"
-#include "GuildMgr.h"
-#include "TicketMgr.h"
-#include "SpellMgr.h"
-#include "GroupMgr.h"
-#include "Chat.h"
-#include "DBCStores.h"
-#include "LootMgr.h"
-#include "ItemEnchantmentMgr.h"
-#include "MapManager.h"
-#include "CreatureAIRegistry.h"
-#include "BattlegroundMgr.h"
-#include "BattlefieldMgr.h"
-#include "OutdoorPvPMgr.h"
-#include "TemporarySummon.h"
-#include "WaypointMovementGenerator.h"
-#include "VMapFactory.h"
-#include "MMapFactory.h"
-#include "GameEventMgr.h"
-#include "PoolMgr.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
-#include "InstanceSaveMgr.h"
-#include "Util.h"
-#include "Language.h"
-#include "CreatureGroups.h"
-#include "Transport.h"
-#include "ScriptMgr.h"
-#include "AddonMgr.h"
-#include "LFGMgr.h"
-#include "ConditionMgr.h"
-#include "DisableMgr.h"
-#include "CharacterDatabaseCleaner.h"
-#include "ScriptMgr.h"
-#include "WeatherMgr.h"
-#include "CreatureTextMgr.h"
-#include "SmartAI.h"
-#include "Channel.h"
-#include "ChannelMgr.h"
-#include "WardenCheckMgr.h"
-#include "Warden.h"
-#include "CalendarMgr.h"
-#include "PetitionMgr.h"
-#include "LootItemStorage.h"
-#include "TransportMgr.h"
-#include "AvgDiffTracker.h"
-#include "DynamicVisibility.h"
-#include "WhoListCache.h"
-#include "AsyncAuctionListing.h"
 #include "SavingSystem.h"
 
 #define ZONE_UPDATE_INTERVAL (2*IN_MILLISECONDS)
@@ -747,12 +677,6 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
 #ifdef _MSC_VER
 #pragma warning(default:4355)
 #endif
-
-    // PlayedTimeReward
-    ptr_Interval = sConfigMgr->GetIntDefault("PlayedTimeReward.Interval", 0);
-    ptr_Money = sConfigMgr->GetIntDefault("PlayedTimeReward.Money", 0);
-    ptr_Honor = sConfigMgr->GetIntDefault("PlayedTimeReward.Honor", 0);
-    ptr_Arena = sConfigMgr->GetIntDefault("PlayedTimeReward.Arena", 0);
 
     m_speakTime = 0;
     m_speakCount = 0;
@@ -1649,21 +1573,6 @@ void Player::SetDrunkValue(uint8 newDrunkValue, uint32 itemId /*= 0*/)
 
 void Player::Update(uint32 p_time)
 { 
-	// PlayedTimeReward
-    if (ptr_Interval > 0)
-    {
-        if (ptr_Interval <= p_time)
-        {
-            GetSession()->SendAreaTriggerMessage("Бонус за проведенное время в игре.");
-            ModifyMoney(ptr_Money);
-            ModifyHonorPoints(ptr_Honor);
-            ModifyArenaPoints(ptr_Arena);
-            ptr_Interval = sConfigMgr->GetIntDefault("PlayedTimeReward.Interval", 0);
-        }
-        else
-            ptr_Interval -= p_time;
-    }
-
     if (!IsInWorld())
         return;
 
@@ -5215,13 +5124,6 @@ void Player::BuildPlayerRepop()
     SetMovement(MOVE_WATER_WALK);
     if (!GetSession()->isLogingOut())
         SetMovement(MOVE_UNROOT);
-	
-	//Ghost Ground Mount
-#define GhostMount_DisplayID	21974 //Swift Spectral Tiger
-#define Ground_Speed         2.0f // 100% ground mount speed   
-
-	SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, GhostMount_DisplayID);	
-	SetSpeed(MOVE_RUN, Ground_Speed, true);
 
     // BG - remove insignia related
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
@@ -5263,9 +5165,6 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 
     SetMovement(MOVE_LAND_WALK);
     SetMovement(MOVE_UNROOT);
-			
-	//dismount upon resurrection
-	SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, 0);
 
     m_deathTimer = 0;
 
@@ -5698,10 +5597,6 @@ void Player::RepopAtGraveyard()
 
 bool Player::CanJoinConstantChannelInZone(ChatChannelsEntry const* channel, AreaTableEntry const* zone)
 { 
-    // Player can join LFG anywhere  
-    if (channel->flags & CHANNEL_DBC_FLAG_LFG && sWorld->getBoolConfig(CONFIG_LFG_LOCATION_ALL)) 
-        return true;  
- 
     if (channel->flags & CHANNEL_DBC_FLAG_ZONE_DEP && zone->flags & AREA_FLAG_ARENA_INSTANCE)
         return false;
 
@@ -12761,19 +12656,16 @@ void Player::QuickEquipItem(uint16 pos, Item* pItem)
 void Player::SetVisibleItemSlot(uint8 slot, Item* pItem)
 { 
     if (pItem)
-	{
-		if (uint32 entry = sTransmogrification->GetFakeEntry(pItem->GetGUID()))
-            SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), entry);
-         else
-            SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), pItem->GetEntry());
-			SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
-			SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
-	}
-	else
-	{
-		SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), 0);
-		SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0);
-	}
+    {
+		SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), pItem->GetEntry());
+        SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0, pItem->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
+        SetUInt16Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 1, pItem->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT));
+    }
+    else
+    {
+        SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2), 0);
+        SetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENCHANTMENT + (slot * 2), 0);
+    }
 }
 
 void Player::VisualizeItem(uint8 slot, Item* pItem)
@@ -12888,8 +12780,6 @@ void Player::MoveItemFromInventory(uint8 bag, uint8 slot, bool update)
 { 
     if (Item* it = GetItemByPos(bag, slot))
     {
-		sTransmogrification->DeleteFakeFromDB(it->GetGUIDLow());
-		
         ItemRemovedQuestCheck(it->GetEntry(), it->GetCount());
         RemoveItem(bag, slot, update);
 		UpdateTitansGrip();
@@ -14694,8 +14584,8 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
                     break;
                 case GOSSIP_OPTION_VENDOR:
                 {
-                    VendorItemData const* vendorItems = creature->GetVendorItems();
-                    if (!vendorItems || vendorItems->Empty())
+                    VendorItemData const* vendorItems = itr->second.ActionMenuId ? nullptr : creature->GetVendorItems();
+                    if (!itr->second.ActionMenuId && (!vendorItems || vendorItems->Empty()))
                     {
                         sLog->outErrorDb("Creature %u (Entry: %u) have UNIT_NPC_FLAG_VENDOR but have empty trading item list.", creature->GetGUIDLow(), creature->GetEntry());
                         canTalk = false;
@@ -14869,7 +14759,7 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
             break;
         case GOSSIP_OPTION_VENDOR:
         case GOSSIP_OPTION_ARMORER:
-            GetSession()->SendListInventory(guid);
+            GetSession()->SendListInventory(guid, menuItemData->GossipActionMenuId);
             break;
         case GOSSIP_OPTION_STABLEPET:
             GetSession()->SendStablePet(guid);
@@ -19327,12 +19217,6 @@ void Player::SaveToDB(bool create, bool logout)
         _SaveStats(trans);
 
     CharacterDatabase.CommitTransaction(trans);
-	
-	    // we save the data here to prevent spamming
-    sAnticheatMgr->SavePlayerData(this);
-
-    // in this way we prevent to spam the db by each report made!
-    // sAnticheatMgr->SavePlayerData(this);
 
     // save pet (hunter pet level and experience and all type pets health/mana).
     if (Pet* pet = GetPet())
@@ -21649,8 +21533,9 @@ bool Player::BuyItemFromVendorSlot(uint64 vendorguid, uint32 vendorslot, uint32 
         return false;
     }
 
-    VendorItemData const* vItems = creature->GetVendorItems();
-    if (!vItems || vItems->Empty())
+
+	VendorItemData const* vItems = GetSession()->GetCurrentVendor() ? sObjectMgr->GetNpcVendorItemList(GetSession()->GetCurrentVendor()) : creature->GetVendorItems(); 
+	if (!vItems || vItems->Empty())
     {
         SendBuyError(BUY_ERR_CANT_FIND_ITEM, creature, item, 0);
         return false;

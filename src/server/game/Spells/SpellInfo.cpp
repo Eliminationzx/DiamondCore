@@ -2898,5 +2898,5 @@ void SpellInfo::_UnloadImplicitTargetConditionLists()
 
 bool SpellInfo::HasInitialAggro() const
 {
-	return AttributesEx & SPELL_ATTR1_NO_THREAT || AttributesEx3 & SPELL_ATTR3_NO_INITIAL_AGGRO;
+	return !(AttributesEx & SPELL_ATTR1_NO_THREAT || AttributesEx3 & SPELL_ATTR3_NO_INITIAL_AGGRO);
 }

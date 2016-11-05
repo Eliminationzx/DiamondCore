@@ -17,7 +17,6 @@
 
 #include "ScriptLoader.h"
 #include "ScriptMgr.h"
-#include "AnticheatMgr.h"
 
 //examples
 void AddSC_example_creature();
@@ -75,7 +74,6 @@ void AddSC_tele_commandscript();
 void AddSC_ticket_commandscript();
 void AddSC_titles_commandscript();
 void AddSC_wp_commandscript();
-void AddSC_anticheat_commandscript();
 
 #ifdef SCRIPTS
 //world
@@ -90,11 +88,6 @@ void AddSC_npc_innkeeper();
 void AddSC_npcs_special();
 void AddSC_npc_taxi();
 void AddSC_achievement_scripts();
-
-//Custom
-void AddSC_CPWS_Transmogrification();
-void AddSC_Duel_Reset();
-void AddSC_XpWeekend();
 
 //events
 void AddSC_event_brewfest_scripts();
@@ -600,7 +593,6 @@ void AddScripts()
     AddSpellScripts();
     AddSC_SmartSCripts();
     AddCommandScripts();
-	sAnticheatMgr->StartScripts();
 #ifdef SCRIPTS
     AddWorldScripts();
 	AddEventScripts();
@@ -669,6 +661,7 @@ void AddSpellScripts()
 void AddCommandScripts()
 {
 	AddSC_server_commandscript();
+
     AddSC_account_commandscript();
     AddSC_achievement_commandscript();
 	AddSC_ban_commandscript();
@@ -699,7 +692,6 @@ void AddCommandScripts()
 	AddSC_ticket_commandscript();
     AddSC_titles_commandscript();
     AddSC_wp_commandscript();
-	AddSC_anticheat_commandscript();
 }
 
 void AddWorldScripts()
@@ -1256,9 +1248,6 @@ void AddCustomScripts()
 {
 #ifdef SCRIPTS
     /* This is where custom scripts should be added. */
-	AddSC_CPWS_Transmogrification();
-	AddSC_Duel_Reset();
-	AddSC_XpWeekend();
 
 #endif
 }

@@ -290,7 +290,7 @@ void InstanceSaveManager::LoadResetTimes()
             continue;
 
         // the reset_delay must be at least one day
-        uint32 period = uint32(((mapDiff->resetTime * sWorld->getRate(RATE_INSTANCE_RESET_TIME)) / DAY) * DAY);
+        uint32 period = mapDiff->resetTime;
         if (period < DAY)
             period = DAY;
 

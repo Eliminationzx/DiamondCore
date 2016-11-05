@@ -75,9 +75,8 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT    = 0x00800000,   // 23   removed by entering pvp combat
     AURA_INTERRUPT_FLAG_DIRECT_DAMAGE       = 0x01000000,   // 24   removed by any direct damage
     AURA_INTERRUPT_FLAG_LANDING             = 0x02000000,   // 25   removed by hitting the ground
-	AURA_INTERRUPT_FLAG_TAKE_DAMAGE_NOT_TRIGGERED = 0x00480000, // 26 removed by not triggered spell damage (Spells like Dragon's breath and etc)
-	AURA_INTERRUPT_FLAG_STEALTH             = 0x00023C04,   // 27   removed by any cc's and etc
-	AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION = 0x000A1404, // 28 removed by any hostile actions
+	AURA_INTERRUPT_FLAG_STEALTH             = 0x00023C04,   // 26   removed by any cc's and etc
+	AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION = 0x000A1404, // 27 removed by any hostile actions
 
     AURA_INTERRUPT_FLAG_NOT_VICTIM = (AURA_INTERRUPT_FLAG_HITBYSPELL | AURA_INTERRUPT_FLAG_TAKE_DAMAGE | AURA_INTERRUPT_FLAG_DIRECT_DAMAGE),
 };
@@ -1300,7 +1299,6 @@ enum SpellCooldownFlags
 };
 
 #define MAX_CLIENT_LATENCY_NORM 400
-#define SANCTUARY_TIME_DELAY 500
 
 typedef UNORDERED_MAP<uint32, uint32> PacketCooldowns;
 
@@ -1700,6 +1698,7 @@ class Unit : public WorldObject
         bool IsInCombat() const { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT); }
         bool IsPetInCombat() const { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT); }
         void CombatStart(Unit* target, bool initialAggro = true);
+        void CombatStartOnCast(Unit* target, bool initialAggro = true, uint32 duration = 0);
         void SetInCombatState(bool PvP, Unit* enemy = NULL, uint32 duration = 0);
         void SetInCombatWith(Unit* enemy, uint32 duration = 0);
         void ClearInCombat();
@@ -2437,10 +2436,6 @@ class Unit : public WorldObject
         // Movement info
         Movement::MoveSpline * movespline;
 
-		uint32 GetForceVisibilityTimer() const { return m_forcedVisibilityTimer; }
-		bool IsVisibilityForced() const { return m_forcedVisibilityTimer > 0; }
-		void SetForcedVisibilityTimer(uint32 time) { m_forcedVisibilityTimer = time; }
-
     protected:
         explicit Unit (bool isWorldObject);
 
@@ -2561,9 +2556,7 @@ class Unit : public WorldObject
         bool m_cleanupDone; // lock made to not add stuff after cleanup before delete
         bool m_duringRemoveFromWorld; // lock made to not add stuff after begining removing from world
 
-        uint32 _oldFactionId;           ///< faction before 
-
-		uint32 m_forcedVisibilityTimer;
+        uint32 _oldFactionId;           ///< faction before charm
 };
 
 namespace Trinity

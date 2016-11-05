@@ -1604,8 +1604,6 @@ void AuraEffect::HandleModStealth(AuraApplication const* aurApp, uint8 mode, boo
 			target->FinishSpell(CURRENT_AUTOREPEAT_SPELL);
 			target->ToPlayer()->SendAutoRepeatCancel(target);
 		}
-
-		target->SetForcedVisibilityTimer(200);
     }
     else
     {
@@ -1618,8 +1616,6 @@ void AuraEffect::HandleModStealth(AuraApplication const* aurApp, uint8 mode, boo
             target->RemoveStandFlags(UNIT_STAND_FLAGS_CREEP);
             if (target->GetTypeId() == TYPEID_PLAYER)
                 target->RemoveByteFlag(PLAYER_FIELD_BYTES2, 3, PLAYER_FIELD_BYTE2_STEALTH);
-
-			target->SetForcedVisibilityTimer(0);
         }
     }
 

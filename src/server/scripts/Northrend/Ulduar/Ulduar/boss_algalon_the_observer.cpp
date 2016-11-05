@@ -1322,9 +1322,8 @@ class spell_algalon_big_bang : public SpellScriptLoader
 
             void CheckTargets()
             {
-                Unit *caster = GetCaster();
-                if (!_targetCount && caster && caster->GetAI())
-                    caster->GetAI()->DoAction(ACTION_ASCEND);
+                if (!_targetCount)
+                    GetCaster()->GetAI()->DoAction(ACTION_ASCEND);
             }
 
             void Register()

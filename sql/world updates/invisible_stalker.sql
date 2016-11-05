@@ -18,7 +18,7 @@ INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_
 (28718, 0, 0, 0, 10, 0, 100, 0, 1, 20, 30000, 120000, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 'Ranid Glowergold - OOC LOS - Say Line');
 
 DELETE FROM `creature_text` WHERE `entry` IN(29491,28994,28721,28725,33027,28727,28715,28714,28726,29523,28989,28997,28723,28718);
-INSERT INTO `creature_text` (`entry`, `groupid`, `id`, `text`, `type`, `language`, `probability`, `emote`, `duration`, `sound`, `comment`, `BroadcastTextID`) VALUES
+INSERT INTO `creature_text` (`entry`, `groupid`, `id`, `text`, `type`, `language`, `probability`, `emote`, `duration`, `sound`, `comment`, `TextRange`) VALUES
 (29491, 0, 0, 'Welcome. May I help you find something?', 12, 0, 100, 3, 0, 0, 'Karandonna', 0),
 (29491, 0, 1, 'Welcome.', 12, 0, 100, 3, 0, 0, 'Karandonna',0),
 (28994, 0, 0, 'Greetings.', 12, 0, 100, 3, 0, 0, 'Abra Cadabra',0),

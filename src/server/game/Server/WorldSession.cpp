@@ -101,7 +101,7 @@ m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerSave(fa
 m_sessionDbcLocale(sWorld->GetDefaultDbcLocale()),
 m_sessionDbLocaleIndex(locale),
 m_latency(0), m_clientTimeDelay(0), m_TutorialsChanged(false), recruiterId(recruiter),
-isRecruiter(isARecruiter), m_currentBankerGUID(0), timeWhoCommandAllowed(0), _lastAuctionListItemsMSTime(0), _lastAuctionListOwnerItemsMSTime(0), _skipQueue(skipQueue)
+isRecruiter(isARecruiter), m_currentVendorEntry(0), m_currentBankerGUID(0), timeWhoCommandAllowed(0), _lastAuctionListItemsMSTime(0), _lastAuctionListOwnerItemsMSTime(0), _skipQueue(skipQueue)
 {
 	memset(m_Tutorials, 0, sizeof(m_Tutorials));
 
@@ -1084,7 +1084,7 @@ void WorldSession::InitializeQueryCallbackParameters()
     // Callback parameters that have pointers in them should be properly
     // initialized to NULL here.
     _charCreateCallback.SetParam(NULL);
-	_loadPetFromDBFirstCallback.SetFirstParam(0);
+	_loadPetFromDBFirstCallback.SetFirstParam(NULL);
 	_loadPetFromDBFirstCallback.SetSecondParam(NULL);
 }
 
