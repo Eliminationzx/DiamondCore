@@ -2175,6 +2175,33 @@ void Spell::CleanupTargetList()
 	m_delayTrajectory = 0;
 }
 
+bool Spell::IsDelayed() const
+{
+	if (!m_triggeredByAuraSpell)
+	{
+		switch (m_spellInfo->Effects[0].Effect)
+		{
+			case SPELL_EFFECT_APPLY_AURA:
+			case SPELL_EFFECT_SCHOOL_DAMAGE:
+			case SPELL_EFFECT_ENVIRONMENTAL_DAMAGE:
+			case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
+			case SPELL_EFFECT_WEAPON_PERCENT_DAMAGE:
+			case SPELL_EFFECT_WEAPON_DAMAGE:
+			case SPELL_EFFECT_NORMALIZED_WEAPON_DMG:
+			case SPELL_EFFECT_POWER_BURN:
+			case SPELL_EFFECT_HEAL_MECHANICAL:
+			case SPELL_EFFECT_HEAL_PCT:
+			case SPELL_EFFECT_HEAL_MAX_HEALTH:
+			case SPELL_EFFECT_HEAL:
+			case SPELL_EFFECT_DISPEL:
+			case SPELL_EFFECT_STEAL_BENEFICIAL_BUFF:
+			case SPELL_EFFECT_PERSISTENT_AREA_AURA:
+				return true;
+		}
+	}
+	return false;
+}
+
 void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*= true*/, bool implicit /*= true*/)
 {
     for (uint32 effIndex = 0; effIndex < MAX_SPELL_EFFECTS; ++effIndex)
@@ -2260,7 +2287,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
 		if (m_delayMoment == 0 || m_delayMoment > targetInfo.timeDelay)
 			m_delayMoment = targetInfo.timeDelay;
 	}
-	else if (!IsTriggered() && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster != target)
+	else if (IsDelayed() && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster != target)
 	{
 		// Client latency calculation
 		uint64 m_clientLatency = uint64(World::GetGameTimeMS() - m_caster->ToPlayer()->GetSession()->GetLatency());
