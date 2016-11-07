@@ -2857,6 +2857,14 @@ bool SpellInfo::_IsPositiveSpell() const
     return true;
 }
 
+bool SpellInfo::IsDelayedTriggeredTarget() const
+{
+	for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+		if (!_IsDelayedTriggeredTarget(Effects[i].TargetA.GetTarget(), Effects[i].TargetB.GetTarget()))
+			return false;
+	return true;
+}
+
 bool SpellInfo::_IsPositiveTarget(uint32 targetA, uint32 targetB)
 {
     // non-positive targets
@@ -2877,6 +2885,29 @@ bool SpellInfo::_IsPositiveTarget(uint32 targetA, uint32 targetB)
     if (targetB)
         return _IsPositiveTarget(targetB, 0);
     return true;
+}
+
+bool SpellInfo::_IsDelayedTriggeredTarget(uint32 targetA, uint32 targetB)
+{
+	switch (targetA)
+	{
+		case TARGET_UNIT_SRC_AREA_ENEMY:
+		case TARGET_UNIT_TARGET_ENEMY:
+		case TARGET_UNIT_NEARBY_ENEMY:
+		case TARGET_UNIT_CONE_ENEMY_104:
+		case TARGET_UNIT_DEST_AREA_ENEMY:
+		case TARGET_UNIT_CONE_ENEMY_24:
+		case TARGET_DEST_TARGET_ENEMY:
+		case TARGET_UNIT_CONE_ENEMY_54:
+		case TARGET_CORPSE_SRC_AREA_ENEMY:
+		case TARGET_DEST_DYNOBJ_ENEMY:
+			return true;
+		default:
+			break;
+	}
+	if (targetB)
+		return _IsDelayedTriggeredTarget(targetB, 0);
+    return false;
 }
 
 void SpellInfo::_UnloadImplicitTargetConditionLists()
