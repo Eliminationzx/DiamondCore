@@ -515,8 +515,6 @@ class Spell
 
         bool UpdatePointers();                              // must be used at call Spell code after time delay (non triggered spell cast/update spell call/etc)
 
-		bool IsDelayed() const;
-
         void CleanupTargetList();
 
         void SetSpellValue(SpellValueMod mod, int32 value);
