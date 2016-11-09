@@ -223,7 +223,7 @@ public:
 						                       me->SetHomePosition(cords[phase+1][0], cords[phase+1][1], cords[phase+1][2], cords[phase+1][3]);
 											   me->DestroyForNearbyPlayers();
 						LeaveCombat();
-						                       me->CastSpell(me, SPELL_EVOCATION, true)
+						                       me->CastSpell(me, SPELL_EVOCATION, true);
 											   releaseLockTimer = 1;
 				}
 				break;
@@ -236,7 +236,7 @@ public:
 						                       me->SetHomePosition(cords[phase+1][0], cords[phase+1][1], cords[phase+1][2], cords[phase+1][3]);
 											   me->DestroyForNearbyPlayers();
 						LeaveCombat();
-						                       me->CastSpell(me, SPELL_EVOCATION, true)
+						                       me->CastSpell(me, SPELL_EVOCATION, true);
 											   releaseLockTimer = 1;
 				}
 				break;
@@ -273,7 +273,6 @@ public:
 		}
 
 		void MoveInLineOfSight(Unit* /*who*/) {}
-
 
 		void UpdateAI(uint32 diff)
 		{
