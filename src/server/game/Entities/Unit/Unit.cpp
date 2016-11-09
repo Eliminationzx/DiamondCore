@@ -12405,6 +12405,33 @@ void Unit::CombatStart(Unit* target, bool initialAggro)
     }
 }
 
+void Unit::CombatStartOnCast(Unit* target, bool initialAggro, uint32 duration)
+{ 
+	// Xinef: Dont allow to start combat with triggers
+	if (target->GetTypeId() == TYPEID_UNIT && target->ToCreature()->IsTrigger())
+ 		return;
+ 
+     if (initialAggro)
+     {
+         SetInCombatWith(target, duration);
+ 
+ 		// Xinef: If pet started combat - put owner in combat
+ 		if (Unit* owner = GetOwner())
+ 			owner->SetInCombatWith(target, duration);
+     }
+ 
+     Unit* who = target->GetCharmerOrOwnerOrSelf();
+     if (who->GetTypeId() == TYPEID_PLAYER)
+       SetContestedPvP(who->ToPlayer());
+ 
+     Player* me = GetCharmerOrOwnerPlayerOrPlayerItself();
+     if (me && who->IsPvP() && (who->GetTypeId() != TYPEID_PLAYER || !me->duel || me->duel->opponent != who))
+     {
+         me->UpdatePvP(true);
+         me->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
+     }
+ }
+
 void Unit::SetInCombatState(bool PvP, Unit* enemy, uint32 duration)
 { 
     // only alive units can be in combat

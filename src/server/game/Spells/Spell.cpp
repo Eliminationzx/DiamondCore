@@ -3619,7 +3619,7 @@ void Spell::_cast(bool skipCheck)
     SendSpellGo();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
-	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled() || m_spellInfo->AttributesEx4 & SPELL_ATTR4_UNK4)
+	if ((m_spellInfo->Speed > 0.0f || m_delayMoment > 0) && !m_spellInfo->IsChanneled()/* xinef: we dont need this shit || m_spellInfo->Id == 14157*/)
     {
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
         // in case delayed spell remove item at cast delay start
@@ -3670,6 +3670,12 @@ void Spell::_cast(bool skipCheck)
         if (Unit* target = m_targets.GetUnitTarget())
             if (target->GetTypeId() == TYPEID_UNIT)
                 m_caster->CastSpell(target, 32747, true);
+
+	// xinef: start combat at cast for delayed spells, only for explicit target
+	if (Unit* target = m_targets.GetUnitTarget())
+		if (m_caster->GetTypeId() == TYPEID_PLAYER || (m_caster->IsPet() && m_caster->IsControlledByPlayer()))
+			if (GetDelayMoment() > 0 && !m_caster->IsFriendlyTo(target) && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT) && (!m_spellInfo->IsPositive() || m_spellInfo->HasEffect(SPELL_EFFECT_DISPEL)))
+				m_caster->CombatStartOnCast(target, !m_spellInfo->HasAttribute(SPELL_ATTR3_NO_INITIAL_AGGRO), GetDelayMoment() + SANCTUARY_TIME_DELAY); // xinef: increase this time so we dont leave and enter combat in a moment
 
     SetExecutedCurrently(false);
 }

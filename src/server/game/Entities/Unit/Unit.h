@@ -1700,6 +1700,7 @@ class Unit : public WorldObject
         bool IsInCombat() const { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT); }
         bool IsPetInCombat() const { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT); }
         void CombatStart(Unit* target, bool initialAggro = true);
+		void CombatStartOnCast(Unit* target, bool initialAggro = true, uint32 duration = 0);
         void SetInCombatState(bool PvP, Unit* enemy = NULL, uint32 duration = 0);
         void SetInCombatWith(Unit* enemy, uint32 duration = 0);
         void ClearInCombat();

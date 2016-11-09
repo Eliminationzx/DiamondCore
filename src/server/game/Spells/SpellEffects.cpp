@@ -4180,6 +4180,13 @@ void Spell::EffectAddComboPoints(SpellEffIndex /*effIndex*/)
     if (!m_caster->m_movedByPlayer || !unitTarget || damage <= 0)
         return;
 
+	if (m_spellInfo->Id == 14157 || // Ruthlessness and Netherblade set
+		m_spellInfo->Id == 70802)   // xinef: mayhem, rogue t10p4
+    {
+        m_caster->m_movedByPlayer->ToPlayer()->SetComboPointGain(m_caster->m_movedByPlayer->ToPlayer()->GetComboPointGain()+damage);
+        return;
+    }
+
 	m_caster->m_movedByPlayer->ToPlayer()->AddComboPoints(unitTarget, damage);
 }
 
