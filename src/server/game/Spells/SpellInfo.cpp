@@ -2857,14 +2857,6 @@ bool SpellInfo::_IsPositiveSpell() const
     return true;
 }
 
-bool SpellInfo::IsDelayedTriggeredTarget() const
-{
-	for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-		if (!_IsDelayedTriggeredTarget(Effects[i].TargetA.GetTarget(), Effects[i].TargetB.GetTarget()))
-			return false;
-	return true;
-}
-
 bool SpellInfo::_IsPositiveTarget(uint32 targetA, uint32 targetB)
 {
     // non-positive targets
@@ -2878,6 +2870,7 @@ bool SpellInfo::_IsPositiveTarget(uint32 targetA, uint32 targetB)
         case TARGET_UNIT_CONE_ENEMY_104:
         case TARGET_DEST_DYNOBJ_ENEMY:
         case TARGET_DEST_TARGET_ENEMY:
+		case TARGET_UNIT_CONE_ENEMY_54:
             return false;
         default:
             break;
@@ -2887,26 +2880,51 @@ bool SpellInfo::_IsPositiveTarget(uint32 targetA, uint32 targetB)
     return true;
 }
 
-bool SpellInfo::_IsDelayedTriggeredTarget(uint32 targetA, uint32 targetB)
+bool SpellInfo::IsAffectedByClientLatency() const
+{
+	for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+		if (_IsUnitTarget(Effects[i].TargetA.GetTarget(), Effects[i].TargetB.GetTarget()))
+			return true;
+	return false;
+}
+
+bool SpellInfo::_IsUnitTarget(uint32 targetA, uint32 targetB)
 {
 	switch (targetA)
 	{
+		// Enemy target
 		case TARGET_UNIT_SRC_AREA_ENEMY:
 		case TARGET_UNIT_TARGET_ENEMY:
 		case TARGET_UNIT_NEARBY_ENEMY:
 		case TARGET_UNIT_CONE_ENEMY_104:
 		case TARGET_UNIT_DEST_AREA_ENEMY:
 		case TARGET_UNIT_CONE_ENEMY_24:
-		case TARGET_DEST_TARGET_ENEMY:
 		case TARGET_UNIT_CONE_ENEMY_54:
-		case TARGET_CORPSE_SRC_AREA_ENEMY:
-		case TARGET_DEST_DYNOBJ_ENEMY:
+		// Friendly target
+		case TARGET_UNIT_CONE_ALLY:
+		case TARGET_UNIT_DEST_AREA_ALLY:
+		case TARGET_UNIT_NEARBY_ALLY:
+		case TARGET_UNIT_SRC_AREA_ALLY:
+		case TARGET_UNIT_TARGET_ALLY:
+		case TARGET_UNIT_TARGET_CHAINHEAL_ALLY:
+		// Raid target
+		case TARGET_UNIT_NEARBY_RAID:
+		case TARGET_UNIT_TARGET_AREA_RAID_CLASS:
+		case TARGET_UNIT_TARGET_RAID:
+		case TARGET_UNIT_CASTER_AREA_RAID:
+		// Party target
+		case TARGET_UNIT_CASTER_AREA_PARTY:
+		case TARGET_UNIT_DEST_AREA_PARTY:
+		case TARGET_UNIT_LASTTARGET_AREA_PARTY:
+		case TARGET_UNIT_NEARBY_PARTY:
+		case TARGET_UNIT_SRC_AREA_PARTY:
+		case TARGET_UNIT_TARGET_PARTY:
 			return true;
 		default:
 			break;
 	}
 	if (targetB)
-		return _IsDelayedTriggeredTarget(targetB, 0);
+		return _IsUnitTarget(targetB, 0);
     return false;
 }
 

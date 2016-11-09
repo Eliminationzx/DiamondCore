@@ -512,8 +512,8 @@ public:
     bool _IsPositiveEffect(uint8 effIndex, bool deep) const;
     bool _IsPositiveSpell() const;
     static bool _IsPositiveTarget(uint32 targetA, uint32 targetB);
-	static bool _IsDelayedTriggeredTarget(uint32 targetA, uint32 targetB);
-	bool IsDelayedTriggeredTarget() const;
+	static bool _IsUnitTarget(uint32 targetA, uint32 targetB);
+	bool IsAffectedByClientLatency() const;
 	AuraStateType LoadAuraState() const;
 	SpellSpecificType LoadSpellSpecific() const;
     // unloading helpers
