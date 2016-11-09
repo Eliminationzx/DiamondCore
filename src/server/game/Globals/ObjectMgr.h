@@ -1068,7 +1068,12 @@ class ObjectMgr
          }
         GameObjectData& NewGOData(uint32 guid) { return _gameObjectDataStore[guid]; }
         void DeleteGOData(uint32 guid);
-		
+        GameObjectLocale const* GetGameObjectLocale(uint32 entry) const
+         {
+             GameObjectLocaleContainer::const_iterator itr = _gameObjectLocaleStore.find(entry);
+             if (itr == _gameObjectLocaleStore.end()) return NULL;
+             return &itr->second;
+        }
 		ItemLocale const* GetItemLocale(uint32 entry) const
 		{
 			ItemLocaleContainer::const_iterator itr = _itemLocaleStore.find(entry);
