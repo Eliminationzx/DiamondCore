@@ -76,6 +76,9 @@ public:
 
 		void OnPlayerEnter(Player* plr)
 		{
+			if (Creature* c = instance->GetCreature(GetData64(DATA_LEADER_FIRST_GUID)))
+				c->AI()->SetData(DATA_START_INTRO, 0);
+			
 			instance->LoadGrid(LeaderIntroPos.GetPositionX(), LeaderIntroPos.GetPositionY());
 		}
 
