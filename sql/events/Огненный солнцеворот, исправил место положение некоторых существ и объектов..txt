@@ -1,9 +1,13 @@
+/* Свапн Костра */
 SET @STARTGUID := 268968;
 DELETE FROM `gameobject` WHERE guid = @STARTGUID+0;
 DELETE FROM `gameobject` WHERE guid = @STARTGUID+1;
+/* Стальгорн */
 INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`, `VerifiedBuild`) VALUES (@STARTGUID+0, 181371, 0, 1, 1, -4699.790039, -1222.770020, 501.658997, -1.378810, 0, 0, 0, 0, 300, 0, 1, 0);
+/* Шаттарт */
 INSERT INTO `gameobject` (`guid`, `id`, `map`, `spawnMask`, `phaseMask`, `position_x`, `position_y`, `position_z`, `orientation`, `rotation0`, `rotation1`, `rotation2`, `rotation3`, `spawntimesecs`, `animprogress`, `state`, `VerifiedBuild`) VALUES (@STARTGUID+1, 181371, 530, 1, 1, -1747.849976, 5326.290039, -12.428100, -3.019420, 0, 0, 0, 0, 300, 0, 1, 0);
 
+/* Добавил нпс которых не хватало */
 SET @STARTGUID := 248565;
 
 DELETE FROM `creature` WHERE `guid` BETWEEN @STARTGUID+00 AND @STARTGUID+29;
@@ -73,6 +77,7 @@ INSERT INTO `game_event_creature` (`eventEntry`, `guid`) VALUES
 (1, @STARTGUID+28),
 (1, @STARTGUID+29);
 
+/* Повторяемые нпс.. */
 DELETE FROM `creature` WHERE `guid`=86358 AND `id`=25915;
 DELETE FROM `creature` WHERE `guid`=86387 AND `id`=25920;
 DELETE FROM `creature` WHERE `guid`=86241 AND `id`=25887;
