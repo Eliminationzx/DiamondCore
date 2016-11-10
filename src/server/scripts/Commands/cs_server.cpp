@@ -124,7 +124,7 @@ public:
         uint32 avgUpdateTime = avgDiffTracker.getAverage();
 		
 		//Информация о сервере
-		handler->PSendSysMessage("|cffFF0000 ArathorCore. Unix 64bit Release.");
+		handler->PSendSysMessage("|cffFF0000 %s", _FULLVERSION);
 		if (!queuedSessionCount)
 			handler->PSendSysMessage("|cff0026FF Подключенные игроки: %u. Персонажей в мире: %u.", activeSessionCount, playerCount);
 		else
@@ -132,12 +132,12 @@ public:
 			handler->PSendSysMessage("|cff0026FF Максимум соединений за сессию: %u.", connPeak);
 			handler->PSendSysMessage("|cff0026FF Время обновления diff: %ums, средний: %ums.", updateTime, avgUpdateTime);
 			handler->PSendSysMessage(LANG_UPTIME, uptime.c_str());
-			
+
 		if (handler->GetSession())
 			if (Player* p = handler->GetSession()->GetPlayer())
 				if (p->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DEVELOPER))
 					handler->PSendSysMessage("|cff0026FF DEV wavg: %ums, nsmax: %ums, nsavg: %ums. LFG avg: %ums, max: %ums.", avgDiffTracker.getTimeWeightedAverage(), devDiffTracker.getMax(), devDiffTracker.getAverage(), lfgDiffTracker.getAverage(), lfgDiffTracker.getMax());
-		
+			
         //! Can't use sWorld->ShutdownMsg here in case of console command
         if (sWorld->IsShuttingDown())
             handler->PSendSysMessage(LANG_SHUTDOWN_TIMELEFT, secsToTimeString(sWorld->GetShutDownTimeLeft()).append(".").c_str());

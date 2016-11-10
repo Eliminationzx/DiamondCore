@@ -273,6 +273,10 @@ void InstanceSaveManager::LoadResetTimes()
                 CharacterDatabase.DirectPExecute("DELETE FROM instance_reset WHERE mapid = '%u' AND difficulty = '%u'", mapid, difficulty);
                 continue;
             }
+			// update the reset time if the hour in the configs changes
+            uint64 newresettime = (resettime / DAY) * DAY + diff;
+            if (resettime != newresettime)
+                CharacterDatabase.DirectPExecute("UPDATE instance_reset SET resettime = '%u' WHERE mapid = '%u' AND difficulty = '%u'", uint32(newresettime), mapid, difficulty);
 
             SetResetTimeFor(mapid, difficulty, resettime);
         } while (result->NextRow());
@@ -295,6 +299,7 @@ void InstanceSaveManager::LoadResetTimes()
             period = DAY;
 
         time_t t = GetResetTimeFor(mapid, difficulty);
+		
         if (!t)
         {
             // initialize the reset time
