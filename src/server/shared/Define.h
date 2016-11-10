@@ -24,6 +24,10 @@
 #include <ace/Basic_Types.h>
 #include <ace/ACE_export.h>
 
+#if defined(_WIN32) || defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__BORLANDC__)
+#define OS_WIN
+#endif
+
 #include <cstddef>
 
 #define TRINITY_LITTLEENDIAN 0
