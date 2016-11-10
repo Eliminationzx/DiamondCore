@@ -1,2 +1,2 @@
-# SunWellCore
-This is lite distribution of SunWellCore.
+# ArathorCore
+This is lite distribution of ArathorCore.
