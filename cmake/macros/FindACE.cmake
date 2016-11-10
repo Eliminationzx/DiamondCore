@@ -1,3 +1,15 @@
+# Copyright (C) 2016 Project Sunwell
+# Copyright (C) 2011-2016 Project SkyFire <http://www.projectskyfire.org/
+# Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+#
+# This file is free software; as a special exception the author gives
+# unlimited permission to copy and/or distribute it, with or without
+# modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 #
 # Find the ACE client includes and library
 #
@@ -70,7 +82,7 @@ if ( UNIX )
       include(EnsureVersion)
       ENSURE_VERSION( "${ACE_EXPECTED_VERSION}" "${ACE_VERSION}" ACE_FOUND)
       if (NOT ACE_FOUND)
-        message(FATAL_ERROR "SunwellCore needs ACE version ${ACE_EXPECTED_VERSION} but found version ${ACE_VERSION}")
+        message(FATAL_ERROR "TrinityCore needs ACE version ${ACE_EXPECTED_VERSION} but found version ${ACE_VERSION}")
       endif()
 
       message( STATUS "Found ACE library: ${ACE_LIBRARY}")

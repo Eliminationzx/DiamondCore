@@ -1,0 +1,33 @@
+sudo: required
+dist: thrusty
+language: cpp
+
+compiler:
+  ##- clang Unknown error what is wrong!
+  - gcc ## Uncomment when we are up to full c++11 standards.
+  
+git:
+  depth: 1
+
+before_install:
+  - sudo add-apt-repository ppa:kalakris/cmake -y
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo add-apt-repository 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.7 main'
+  - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
+  - sudo apt-get update -qq
+  - sudo apt-get install clang-3.7
+  - sudo apt-get install libace-dev
+  - sudo apt-get install libncurses5-dev
+  - sudo apt-get install build-essential autoconf libtool make cmake git-core patch wget links zip unzip unrar
+  - sudo apt-get install openssl libssl-dev mysql-server mysql-client libmysqlclient15-dev libmysql++-dev libreadline6-dev zlib1g-dev libbz2-dev
+  - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+  - if [ "$CXX" = "cpp" ]; then export CXX="cpp-4.8" CC="cpp-4.8"; fi
+
+script:
+  - mkdir build
+  - cd build
+  - cmake ../ -DWITH_WARNINGS=0 -DWITH_COREDEBUG=1 -DUSE_COREPCH=1 -DUSE_SCRIPTPCH=1 -DTOOLS=1 -DSCRIPTS=1 -DSERVERS=1 -DNOJEM=1 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS} -w" -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -w"
+  - make -j 8 -k
