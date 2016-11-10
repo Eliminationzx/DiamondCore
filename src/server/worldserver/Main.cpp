@@ -132,6 +132,32 @@ extern int main(int argc, char** argv)
         return 1;
     }
     sLog->outString("Using configuration file %s.", cfg_file);
+	
+	sLog->outString("                       ░                                ░");
+     sLog->outString("              ▄▓▄    ░          ░░░▄▄▄▄▄▄▄▄▄▄░░░░         ░");
+     sLog->outString("               ▀     ░ ░   ▄▄▄██▓▓▓▓▓▓▓███▓▓▓▓▓▓▓▓▄▄▄   ░ ░");
+     sLog->outString("                    ▄▄▄██████▓▓▓▓▓▓▓▓▓▓▓█▓▓▓▓▓▓▓▓▓▓██████▄▄▄");
+     sLog->outString("                 ▄███▀▀  ▄██▓▓▓▓█████▓▓▓▓▓▓█████▓▓▓▓▓█▄  ▀▀███▄░");
+     sLog->outString("                ▓█▓   ░   ▀████████████▓▓████████████▀    ░ ░▓█▓░");
+     sLog->outString("               ▓██▌ ░░  ▒    ▀▀▀██████▓▓▓███████▀▀▀    ▒   ░ ▐██▓░");
+     sLog->outString("               ▐██▄░░░   ▓▓       ▀▀███▓████▀▀       ▓▓    ░░▄██▌");
+     sLog->outString("               ░▀██▌ ░░    ▀██▄    ░░ ▄▒█▄       ▄██▀    ░░░▐██▀░");
+     sLog->outString("             ▄▒▒▒▄▀█▄▄ ░░░░    ░░▄▄▄▓▓▓█▓▓▓▄▄▄▄░░     ░░░ ▄▄▓▀▄▒▒▄▄");
+     sLog->outString("            ▐▓▓▓▓▓███████▄▄▄▄█▒▓▓▓▓▓███████▓▓▓▓▒▒▒▒▄▄▄▄███████▓▓▓▓▓▌");
+     sLog->outString("           ░▓█▓▓█████████████████████▀▀ ▀▀▀█████▓▓▓▓▓████████████▓▓▓ ░");
+     sLog->outString("            ▐█▓▓▓█████▓▓▓█████▓███▀░  ▄▓▄   ░▀████▓██████████████▓▓▌");
+     sLog->outString("             ▀▀█▒▒▓▓▓▓▀▀░ ▀▀▀██▓█▌░ ░▓█▓██▄ ░▐██▓▓█▀▀▀  ▀▀██▓▓▓▒▒▀▀");
+     sLog->outString("                  ▀ ░░ ▄    ▒█▓▓▓█▄ ▐██▓██▌░▄███▓▓█▒    ▄ ▄  ▀  ░");
+     sLog->outString(" ▄        ▄   ▄ ▄▄▄▄▄▄▀█▄ ░▓█▓▓▓████▄█▓▓▓█▄██████▓▓█▓░ ▄█▀█▄▄▄▄▄ ▄   ▄        ▄");
+     sLog->outString("        ▄   ▄ ▄ ▄▄▄▄▄▄▀▄▄ ▀█▓▓▓████████▓██████████▓▓█▀ ▄▄▀▄▄▄▄▄▄ ▄ ▄   ▄");
+     sLog->outString("                     █▀█  ▒▄ ▄▀▀▀▀▀████▓▓████▀▀▀▀▀▄ ▄▒  █▀█");
+     sLog->outString("                     ▓ ▓ ░▓█▓▐██▀▄▄▄ ▄▄ ▄▄▄ ▄▄▄▀▓█▌▓█▓░ ▓ ▓");
+     sLog->outString("                     ▒ ▒ ▐█▒ ▐▓░ ▐▓░ ▐▓░▐█▌ ░▓▌  ▒▌ ▒█▌ ▒ ▒");
+     sLog->outString("                     ░ ░ ▀   ▀ ▄ ▀  ▄ ▀▄ ▀ ▄  ▀ ▄ ▀   ▀ ░ ░");
+     sLog->outString("                     ░ ░        ▀ ░▀ ▀▀ ▀▀▀ ▀░ ▀        ░ ░");
+     sLog->outString("                     ░ ░         ▀▓▓▓▓██████▓▓▀         ░ ░");
+     sLog->outString("              ArathorCoreWotlk 2016(c) Privat-sourced Game Emulation ");
+     sLog->outString("         <https://github.com/Eliminationzx/DiamondCore.git> ArathorCoreWotlk 3.3.5 ");
 
     sLog->outString("Using SSL version: %s (library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
     sLog->outString("Using ACE version: %s", ACE_VERSION);
