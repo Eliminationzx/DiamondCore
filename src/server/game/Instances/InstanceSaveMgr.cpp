@@ -299,9 +299,18 @@ void InstanceSaveManager::LoadResetTimes()
         {
             // initialize the reset time
             t = today + period + diff;
-			SetResetTimeFor(mapid, difficulty, t);
             CharacterDatabase.DirectPExecute("INSERT INTO instance_reset VALUES ('%u', '%u', '%u')", mapid, difficulty, (uint32)t);
         }
+		
+		if (t < now)
+		{
+			 // assume that expired instances have already been cleaned
+			 // calculate the next reset time
+			 t = (t / DAY) * DAY;
+			 t += ((today - t) / period + 1) * period + diff;
+			 CharacterDatabase.DirectPExecute("UPDATE instance_reset SET resettime = '" UI64FMTD "' WHERE mapid = '%u' AND difficulty= '%u'", (uint64)t, mapid, difficulty);
+        }
+		
 		SetExtendedResetTimeFor(mapid, difficulty, t + period);
 
         // schedule the global reset/warning
