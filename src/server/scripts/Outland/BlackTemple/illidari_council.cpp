@@ -447,10 +447,10 @@ class boss_lady_malande : public CreatureScript
 			void EnterCombat(Unit* who)
 			{
 				boss_illidari_council_memberAI::EnterCombat(who);
-				events.ScheduleEvent(EVENT_SPELL_REFLECTIVE_SHIELD, 10000);
-				events.ScheduleEvent(EVENT_SPELL_CIRCLE_OF_HEALING, 20000);
-				events.ScheduleEvent(EVENT_SPELL_DIVINE_WRATH, 5000);
-				events.ScheduleEvent(EVENT_SPELL_EMPOWERED_SMITE, 15000);
+				events.ScheduleEvent(EVENT_SPELL_REFLECTIVE_SHIELD, 0);
+				events.ScheduleEvent(EVENT_SPELL_CIRCLE_OF_HEALING, 300000);
+				events.ScheduleEvent(EVENT_SPELL_DIVINE_WRATH, 40000);
+				events.ScheduleEvent(EVENT_SPELL_EMPOWERED_SMITE, 38000);
 			}
 
 			void UpdateAI(uint32 diff)
@@ -466,22 +466,22 @@ class boss_lady_malande : public CreatureScript
 				{
 					case EVENT_SPELL_CIRCLE_OF_HEALING:
 						me->CastSpell(me, SPELL_CIRCLE_OF_HEALING, false);
-						events.ScheduleEvent(EVENT_SPELL_CIRCLE_OF_HEALING, 20000);
+						events.ScheduleEvent(EVENT_SPELL_CIRCLE_OF_HEALING, 300000);
 						break;
 					case EVENT_SPELL_REFLECTIVE_SHIELD:
 						if (roll_chance_i(50))
 							Talk(SAY_COUNCIL_SPECIAL);
 						me->CastSpell(me, SPELL_REFLECTIVE_SHIELD, false);
-						events.ScheduleEvent(EVENT_SPELL_REFLECTIVE_SHIELD, 40000);
+						events.ScheduleEvent(EVENT_SPELL_REFLECTIVE_SHIELD, 65000);
 						break;
 					case EVENT_SPELL_DIVINE_WRATH:
 						if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f))
 							me->CastSpell(target, SPELL_DIVINE_WRATH, false);
-						events.ScheduleEvent(EVENT_SPELL_DIVINE_WRATH, 20000);
+						events.ScheduleEvent(EVENT_SPELL_DIVINE_WRATH, 40000);
 						break;
 					case EVENT_SPELL_EMPOWERED_SMITE:
 						me->CastSpell(me->GetVictim(), SPELL_EMPOWERED_SMITE, false);
-						events.ScheduleEvent(EVENT_SPELL_EMPOWERED_SMITE, 3000);
+						events.ScheduleEvent(EVENT_SPELL_EMPOWERED_SMITE, 38000);
 						break;					
 				}
 			}
