@@ -648,6 +648,34 @@ bool ScriptMgr::OnItemExpire(Player* player, ItemTemplate const* proto)
     return tmpscript->OnExpire(player, proto);
 }
 
+void ScriptMgr::OnGossipSelect(Player* player, Item* item, uint32 sender, uint32 action)
+ {
+     ASSERT(player);
+     ASSERT(item);
+ 
+     GET_SCRIPT(ItemScript, item->GetScriptId(), tmpscript);
+     tmpscript->OnGossipSelect(player, item, sender, action);
+ }
+ 
+ void ScriptMgr::OnGossipSelectCode(Player* player, Item* item, uint32 sender, uint32 action, const char* code)
+ {
+     ASSERT(player);
+     ASSERT(item);
+ 
+     GET_SCRIPT(ItemScript, item->GetScriptId(), tmpscript);
+     tmpscript->OnGossipSelectCode(player, item, sender, action, code);
+ }
+ 
+ void ScriptMgr::OnGossipSelect(Player* player, uint32 menu_id, uint32 sender, uint32 action)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnGossipSelect(player, menu_id, sender, action);
+ }
+ 
+ void ScriptMgr::OnGossipSelectCode(Player* player, uint32 menu_id, uint32 sender, uint32 action, const char* code)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnGossipSelectCode(player, menu_id, sender, action, code);
+ }
+
 bool ScriptMgr::OnGossipHello(Player* player, Creature* creature)
 {
     ASSERT(player);
@@ -1176,6 +1204,36 @@ void ScriptMgr::OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 newAre
 {
     FOREACH_SCRIPT(PlayerScript)->OnUpdateZone(player, newZone, newArea);
 }
+
+void ScriptMgr::OnPlayerUpdateFaction(Player* player)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnUpdateFaction(player);
+ }
+ 
+ void ScriptMgr::OnPlayerRemoveFromBattleground(Player* player, Battleground* bg)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnPlayerRemoveFromBattleground(player, bg);
+ }
+ 
+ void ScriptMgr::OnAchievementComplete(Player* player, AchievementEntry const* achievement)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnAchiComplete(player, achievement);
+ }
+ 
+ void ScriptMgr::OnCriteriaProgress(Player* player, AchievementCriteriaEntry const* criteria)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnCriteriaProgress(player, criteria);
+ }
+ 
+ void ScriptMgr::OnAchievementSave(SQLTransaction& trans, Player* player, uint16 achiId, CompletedAchievementData achiData)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnAchiSave(trans, player, achiId, achiData);
+ }
+ 
+ void ScriptMgr::OnCriteriaSave(SQLTransaction& trans, Player* player, uint16 critId, CriteriaProgress criteriaData)
+ {
+     FOREACH_SCRIPT(PlayerScript)->OnCriteriaSave(trans, player, critId, criteriaData);
+ }
 
 // Guild
 void ScriptMgr::OnGuildAddMember(Guild* guild, Player* player, uint8& plRank)

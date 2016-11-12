@@ -7036,6 +7036,12 @@ TeamId Player::TeamIdForRace(uint8 race)
 void Player::setFactionForRace(uint8 race)
 { 
     m_team = TeamIdForRace(race);
+	
+	sScriptMgr->OnPlayerUpdateFaction(this);
+	
+	if (GetTeamId(true) != GetTeamId())
+		return;
+	
     ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
     setFaction(rEntry ? rEntry->FactionID : 0);
 }
