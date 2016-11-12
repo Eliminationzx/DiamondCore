@@ -754,6 +754,7 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
     ptr_Honor = sConfigMgr->GetIntDefault("PlayedTimeReward.Honor", 0);
     ptr_Arena = sConfigMgr->GetIntDefault("PlayedTimeReward.Arena", 0);
 
+	m_drwGUID = 0;
     m_speakTime = 0;
     m_speakCount = 0;
 
