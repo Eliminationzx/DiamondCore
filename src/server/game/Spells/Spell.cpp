@@ -2768,44 +2768,20 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         m_caster->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL2, m_spellInfo->Id, 0, unit);
     }
 
-   if (m_caster != unit)
+	if (m_caster != unit)
 	{
-	   // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
-	   // Xinef: Also check evade state
-	   if (m_spellInfo->Speed > 0.0f)
-	   {
-		   if (unit->GetTypeId() == TYPEID_UNIT && unit->ToCreature()->IsInEvadeMode())
-			   return SPELL_MISS_EVADE;
-
-		   if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
-			   return SPELL_MISS_EVADE;
-	   }
-
-		if (m_caster->IsFriendlyTo(unit))
+		// Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
+		// Xinef: Also check evade state
+		if (m_spellInfo->Speed > 0.0f)
 		{
-			// for delayed spells ignore negative spells (after duel end) for friendly targets
-			/// @todo this cause soul transfer bugged
-			// 63881 - Malady of the Mind jump spell (Yogg-Saron)
-			if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive() && m_spellInfo->Id != 63881)
+			if (unit->GetTypeId() == TYPEID_UNIT && unit->ToCreature()->IsInEvadeMode())
 				return SPELL_MISS_EVADE;
 
-			// assisting case, healing and resurrection
-			if (unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
-			{
-				m_caster->SetContestedPvP();
-				if (m_caster->GetTypeId() == TYPEID_PLAYER)
-					m_caster->ToPlayer()->UpdatePvP(true);
-			}
-			if (unit->IsInCombat() && !m_spellInfo->HasInitialAggro() && !m_triggeredByAuraSpell)
-			{
-				// xinef: start combat with hostile unit...
-				if (Unit* hostile = unit->getAttackerForHelper())
-					m_caster->CombatStart(hostile, true);
-				//m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
-				unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
-			}
+			if (unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+				return SPELL_MISS_EVADE;
 		}
-		else
+
+		if (m_caster->_IsValidAttackTarget(unit, m_spellInfo))
 		{
 			unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
 
@@ -2822,6 +2798,31 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
 
 			if (!(m_spellInfo->AttributesCu & SPELL_ATTR0_CU_DONT_BREAK_STEALTH))
 				unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
+		}
+		else if (m_caster->IsFriendlyTo(unit))
+		{
+			// for delayed spells ignore negative spells (after duel end) for friendly targets
+			// TODO: this cause soul transfer bugged
+			if (!IsTriggered() && m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive())
+				return SPELL_MISS_EVADE;
+
+			// assisting case, healing and resurrection
+			if (unit->HasUnitState(UNIT_STATE_ATTACK_PLAYER))
+			{
+				m_caster->SetContestedPvP();
+				if (m_caster->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->HasAura(SPELL_AURA_BIND_SIGHT))
+					m_caster->ToPlayer()->UpdatePvP(true);
+			}
+
+			// xinef: triggered spells should not prolong combat
+			if (unit->IsInCombat() && !m_spellInfo->HasInitialAggro() && !m_triggeredByAuraSpell)
+			{
+				// xinef: start combat with hostile unit...
+				if (Unit* hostile = unit->getAttackerForHelper())
+					m_caster->CombatStart(hostile, true);
+				//m_caster->SetInCombatState(unit->GetCombatTimer() > 0, unit);
+				unit->getHostileRefManager().threatAssist(m_caster, 0.0f);
+			}
 		}
 	}
 
