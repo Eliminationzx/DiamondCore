@@ -2706,6 +2706,15 @@ void SpellMgr::LoadSpellCustomAttr()
         {
             switch (spellInfo->Effects[j].ApplyAuraName)
             {
+				case SPELL_AURA_MOD_POSSESS:
+                case SPELL_AURA_MOD_CONFUSE:
+                case SPELL_AURA_MOD_CHARM:
+                case SPELL_AURA_AOE_CHARM:
+                case SPELL_AURA_MOD_FEAR:
+                case SPELL_AURA_MOD_STUN:
+				case SPELL_AURA_MOD_SILENCE:
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+                    break;
                 case SPELL_AURA_PERIODIC_HEAL:
                 case SPELL_AURA_PERIODIC_DAMAGE:
                 case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
@@ -2718,20 +2727,11 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_POWER_BURN:
                     spellInfo->AttributesCu |= SPELL_ATTR0_CU_NO_INITIAL_THREAT;
 					break;
-				case SPELL_AURA_MOD_DECREASE_SPEED:
-					spellInfo->AttributesCu |= SPELL_ATTR0_CU_DONT_BREAK_STEALTH;
 					break;
             }
 
             switch (spellInfo->Effects[j].Effect)
             {
-				case SPELL_EFFECT_DISPEL:
-                case SPELL_EFFECT_DISPEL_MECHANIC:
-                case SPELL_EFFECT_THREAT:
-                case SPELL_EFFECT_MODIFY_THREAT_PERCENT:
-                case SPELL_EFFECT_DISTRACT:
-                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_DONT_BREAK_STEALTH;
-                    break;
                 case SPELL_EFFECT_SCHOOL_DAMAGE:
                 case SPELL_EFFECT_WEAPON_DAMAGE:
                 case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
@@ -2826,7 +2826,7 @@ void SpellMgr::LoadSpellCustomAttr()
 								spellInfo->Effects[j].ApplyAuraName == SPELL_AURA_PERIODIC_DUMMY)
 								continue;
 						default:
-							if (spellInfo->Effects[j].CalcValue() || ((spellInfo->Effects[j].Effect == SPELL_EFFECT_INTERRUPT_CAST) && !spellInfo->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)))
+							if (spellInfo->Effects[j].CalcValue() || ((spellInfo->Effects[j].Effect == SPELL_EFFECT_INTERRUPT_CAST || spellInfo->HasAttribute(SPELL_ATTR0_CU_AURA_CC)) && !spellInfo->HasAttribute(SPELL_ATTR0_UNAFFECTED_BY_INVULNERABILITY)))
 								if (spellInfo->Id != 69649 && spellInfo->Id != 71056 && spellInfo->Id != 71057 && spellInfo->Id != 71058 && spellInfo->Id != 73061 && spellInfo->Id != 73062 && spellInfo->Id != 73063 && spellInfo->Id != 73064) // Sindragosa Frost Breath
 								if (spellInfo->SpellFamilyName != SPELLFAMILY_MAGE || !(spellInfo->SpellFamilyFlags[0] & 0x20)) // frostbolt
 								if (spellInfo->Id != 55095) // frost fever
@@ -3135,6 +3135,27 @@ void SpellMgr::LoadSpellCustomAttr()
 				spellInfo->RecoveryTime = 1500;
 				spellInfo->_requireCooldownInfo = true;
 				break;
+        }
+
+		switch (spellInfo->SpellFamilyName)
+        {
+            case SPELLFAMILY_WARRIOR:
+                // Shout / Piercing Howl
+                if (spellInfo->SpellFamilyFlags[0] & 0x20000 || spellInfo->SpellFamilyFlags[1] & 0x20)
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+                break;
+            case SPELLFAMILY_DRUID:
+                // Roar
+                if (spellInfo->SpellFamilyFlags[0] & 0x8)
+                    spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+                 break;
+			case SPELLFAMILY_GENERIC:
+				// Stoneclaw Totem effect
+				if(spellInfo->Id == 5729)
+					spellInfo->AttributesCu |= SPELL_ATTR0_CU_AURA_CC;
+				break;
+            default:
+                break;
         }
     }
 
