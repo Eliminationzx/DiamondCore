@@ -182,6 +182,12 @@ void PlayerMenu::SendPointOfInterest(uint32 poiId) const
         sLog->outErrorDb("Request to send non-existing POI (Id: %u), ignored.", poiId);
         return;
     }
+	
+	std::string iconText = poi->icon_name;
+	int32 locale = _session->GetSessionDbLocaleIndex();
+	if (locale >= 0)
+		if (PointOfInterestLocale const* localeData = sObjectMgr->GetPointOfInterestLocale(poiId))
+			ObjectMgr::GetLocaleString(localeData->IconName, locale, iconText);
 
     WorldPacket data(SMSG_GOSSIP_POI, 4 + 4 + 4 + 4 + 4 + 20);  // guess size
     data << uint32(poi->flags);
@@ -189,7 +195,7 @@ void PlayerMenu::SendPointOfInterest(uint32 poiId) const
     data << float(poi->y);
     data << uint32(poi->icon);
     data << uint32(poi->data);
-    data << poi->icon_name;
+    data << iconText;
 
     _session->SendPacket(&data);
 }
