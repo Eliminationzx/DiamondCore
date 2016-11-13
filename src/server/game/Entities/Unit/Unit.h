@@ -75,8 +75,6 @@ enum SpellAuraInterruptFlags
     AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT    = 0x00800000,   // 23   removed by entering pvp combat
     AURA_INTERRUPT_FLAG_DIRECT_DAMAGE       = 0x01000000,   // 24   removed by any direct damage
     AURA_INTERRUPT_FLAG_LANDING             = 0x02000000,   // 25   removed by hitting the ground
-	AURA_INTERRUPT_FLAG_STEALTH             = 0x00023C04,   // 26   removed by any cc's and etc
-	AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION = 0x000A1404, // 27 removed by any hostile actions
 
     AURA_INTERRUPT_FLAG_NOT_VICTIM = (AURA_INTERRUPT_FLAG_HITBYSPELL | AURA_INTERRUPT_FLAG_TAKE_DAMAGE | AURA_INTERRUPT_FLAG_DIRECT_DAMAGE),
 };
@@ -1297,8 +1295,6 @@ enum SpellCooldownFlags
     SPELL_COOLDOWN_FLAG_INCLUDE_GCD             = 0x1,  ///< Starts GCD in addition to normal cooldown specified in the packet
     SPELL_COOLDOWN_FLAG_INCLUDE_EVENT_COOLDOWNS = 0x2   ///< Starts GCD for spells that should start their cooldown on events, requires SPELL_COOLDOWN_FLAG_INCLUDE_GCD set
 };
-
-#define MAX_CLIENT_LATENCY_NORM 400
 
 typedef UNORDERED_MAP<uint32, uint32> PacketCooldowns;
 
