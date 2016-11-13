@@ -2727,7 +2727,6 @@ void SpellMgr::LoadSpellCustomAttr()
                 case SPELL_AURA_POWER_BURN:
                     spellInfo->AttributesCu |= SPELL_ATTR0_CU_NO_INITIAL_THREAT;
 					break;
-					break;
             }
 
             switch (spellInfo->Effects[j].Effect)
