@@ -2809,17 +2809,6 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
 		{
 			unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
 
-			// Interrupt periodic trigger auras
-			Unit::AuraEffectList const& auraPeriodicTrigger = unit->GetAuraEffectsByType(SPELL_AURA_PERIODIC_TRIGGER_SPELL);
-			for (Unit::AuraEffectList::const_iterator itr = auraPeriodicTrigger.begin(); itr != auraPeriodicTrigger.end();)
-			{
-				SpellInfo const* spellInfo = (*itr)->GetSpellInfo();
-				++itr;
-
-				if ((spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_TAKE_ANY_HOSTILE_ACTION))
-					unit->RemoveAurasDueToSpell(spellInfo->Id);
-			}
-
 			if (m_spellInfo->HasAttribute(SPELL_ATTR0_CU_AURA_CC))
 				unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_STEALTH);
 		}
