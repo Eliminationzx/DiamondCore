@@ -251,67 +251,67 @@ void InstanceSaveManager::LoadInstances()
 
 void InstanceSaveManager::LoadResetTimes()
 {
-    time_t now = time(NULL);
-    time_t today = (now / DAY) * DAY;
+	time_t now = time(NULL);
+	time_t today = (now / DAY) * DAY;
 
-    // load the global respawn times for raid/heroic instances
-    uint32 diff = sWorld->getIntConfig(CONFIG_INSTANCE_RESET_TIME_HOUR) * HOUR;
-    QueryResult result = CharacterDatabase.Query("SELECT mapid, difficulty, resettime FROM instance_reset");
-    if (result)
-    {
-        do
-        {
-            Field* fields = result->Fetch();
-            uint32 mapid = fields[0].GetUInt16();
-            Difficulty difficulty = Difficulty(fields[1].GetUInt8());
-            uint64 resettime = fields[2].GetUInt32();
+	// load the global respawn times for raid/heroic instances
+	uint32 diff = sWorld->getIntConfig(CONFIG_INSTANCE_RESET_TIME_HOUR) * HOUR;
+	QueryResult result = CharacterDatabase.Query("SELECT mapid, difficulty, resettime FROM instance_reset");
+	if (result)
+	{
+		do
+		{
+			Field* fields = result->Fetch();
+			uint32 mapid = fields[0].GetUInt16();
+			Difficulty difficulty = Difficulty(fields[1].GetUInt8());
+			uint64 resettime = fields[2].GetUInt32();
 
-            MapDifficulty const* mapDiff = GetMapDifficultyData(mapid, difficulty);
-            if (!mapDiff)
-            {
-                sLog->outError("InstanceSaveManager::LoadResetTimes: invalid mapid(%u)/difficulty(%u) pair in instance_reset!", mapid, difficulty);
-                CharacterDatabase.DirectPExecute("DELETE FROM instance_reset WHERE mapid = '%u' AND difficulty = '%u'", mapid, difficulty);
-                continue;
-            }
+			MapDifficulty const* mapDiff = GetMapDifficultyData(mapid, difficulty);
+			if (!mapDiff)
+			{
+				sLog->outError("InstanceSaveManager::LoadResetTimes: invalid mapid(%u)/difficulty(%u) pair in instance_reset!", mapid, difficulty);
+				CharacterDatabase.DirectPExecute("DELETE FROM instance_reset WHERE mapid = '%u' AND difficulty = '%u'", mapid, difficulty);
+				continue;
+			}
 
-            SetResetTimeFor(mapid, difficulty, resettime);
-        } while (result->NextRow());
-    }
+			SetResetTimeFor(mapid, difficulty, resettime);
+		} while (result->NextRow());
+	}
 
-    // calculate new global reset times for expired instances and those that have never been reset yet
-    // add the global reset times to the priority queue
-    for (MapDifficultyMap::const_iterator itr = sMapDifficultyMap.begin(); itr != sMapDifficultyMap.end(); ++itr)
-    {
-        uint32 map_diff_pair = itr->first;
-        uint32 mapid = PAIR32_LOPART(map_diff_pair);
-        Difficulty difficulty = Difficulty(PAIR32_HIPART(map_diff_pair));
-        MapDifficulty const* mapDiff = &itr->second;
-        if (!mapDiff->resetTime)
-            continue;
+	// calculate new global reset times for expired instances and those that have never been reset yet
+	// add the global reset times to the priority queue
+	for (MapDifficultyMap::const_iterator itr = sMapDifficultyMap.begin(); itr != sMapDifficultyMap.end(); ++itr)
+	{
+		uint32 map_diff_pair = itr->first;
+		uint32 mapid = PAIR32_LOPART(map_diff_pair);
+		Difficulty difficulty = Difficulty(PAIR32_HIPART(map_diff_pair));
+		MapDifficulty const* mapDiff = &itr->second;
+		if (!mapDiff->resetTime)
+			continue;
 
-        // the reset_delay must be at least one day
-        uint32 period = uint32(((mapDiff->resetTime * sWorld->getRate(RATE_INSTANCE_RESET_TIME)) / DAY) * DAY);
-        if (period < DAY)
-            period = DAY;
+		// the reset_delay must be at least one day
+		uint32 period = mapDiff->resetTime;
+		if (period < DAY)
+			period = DAY;
 
-        time_t t = GetResetTimeFor(mapid, difficulty);
-        if (!t)
-        {
-            // initialize the reset time
-            t = today + period + diff;
+		time_t t = GetResetTimeFor(mapid, difficulty);
+		if (!t)
+		{
+			// initialize the reset time
+			t = today + period + diff;
 			SetResetTimeFor(mapid, difficulty, t);
-            CharacterDatabase.DirectPExecute("INSERT INTO instance_reset VALUES ('%u', '%u', '%u')", mapid, difficulty, (uint32)t);
-        }
+			CharacterDatabase.DirectPExecute("INSERT INTO instance_reset VALUES ('%u', '%u', '%u')", mapid, difficulty, (uint32)t);
+		}
 		SetExtendedResetTimeFor(mapid, difficulty, t + period);
 
-        // schedule the global reset/warning
-        uint8 type;
-        for (type = 1; type < 5; ++type)
-            if (now + ResetTimeDelay[type-1] < t)
-                break;
+		// schedule the global reset/warning
+		uint8 type;
+		for (type = 1; type < 5; ++type)
+			if (now + ResetTimeDelay[type - 1] < t)
+				break;
 
-        ScheduleReset(t - ResetTimeDelay[type-1], InstResetEvent(type, mapid, difficulty));
-    }
+		ScheduleReset(t - ResetTimeDelay[type - 1], InstResetEvent(type, mapid, difficulty));
+	}
 }
 
 void InstanceSaveManager::LoadInstanceSaves()
@@ -554,7 +554,7 @@ void InstanceSaveManager::_ResetOrWarnAll(uint32 mapid, Difficulty difficulty, b
     for (mitr = instMaps.begin(); mitr != instMaps.end(); ++mitr)
     {
         Map* map2 = mitr->second;
-		if (!map2->IsDungeon() || map2->GetDifficulty() != difficulty)
+        if (!map2->IsDungeon() || map2->GetDifficulty() != difficulty)
             continue;
 
         if (warn)
@@ -567,10 +567,10 @@ void InstanceSaveManager::_ResetOrWarnAll(uint32 mapid, Difficulty difficulty, b
             map2->ToInstanceMap()->SendResetWarnings(timeLeft);
         }
         else
-		{
-			InstanceSave* save = GetInstanceSave(map2->GetInstanceId());
-			map2->ToInstanceMap()->Reset(INSTANCE_RESET_GLOBAL, (save ? &(save->m_playerList) : NULL));
-		}
+        {
+            InstanceSave* save = GetInstanceSave(map2->GetInstanceId());
+            map2->ToInstanceMap()->Reset(INSTANCE_RESET_GLOBAL, (save ? &(save->m_playerList) : NULL));
+        }
     }
 }
 
